@@ -56,3 +56,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // The login page in a Custom Tab (MainActivity.browserLogin).
+    implementation("androidx.browser:browser:1.8.0")
+}

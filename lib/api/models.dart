@@ -227,6 +227,23 @@ class PhotoState {
     required this.api,
   });
 
+  /// Nothing yet (before the first answer).
+  const PhotoState.empty()
+    : folders = const [],
+      shards = const [],
+      texts = const [],
+      people = null,
+      names = const {},
+      hiddenPeople = const {},
+      progress = const {},
+      favorites = const {},
+      facesEnabled = false,
+      analysis = const {},
+      stories = null,
+      uploadFolder = null,
+      ffmpeg = false,
+      api = 0;
+
   factory PhotoState.fromJson(Map<String, dynamic> j) => PhotoState(
     folders: _list(j['folders'], PhotoFolder.fromJson),
     shards: _strings(j['shards']),

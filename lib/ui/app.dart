@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../auth/controller.dart';
 import '../l10n/app_localizations.dart';
+import 'connect.dart';
 import 'home.dart';
 
 /// The app: Material 3, light and dark from the system, Russian and English.
+/// Shows the connect screen while logged out, the gallery after.
 class RcPhotoApp extends StatelessWidget {
-  const RcPhotoApp({super.key, this.locale});
+  const RcPhotoApp({super.key, required this.auth, this.locale});
+
+  final AuthController auth;
 
   /// Forces a language (tests); null follows the phone.
   final Locale? locale;
@@ -31,7 +36,16 @@ class RcPhotoApp extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: ListenableBuilder(
+        listenable: auth,
+        builder: (context, _) {
+          if (auth.starting) return const Scaffold(body: SizedBox.shrink());
+          final s = auth.session;
+          return s == null
+              ? ConnectScreen(auth: auth)
+              : HomeScreen(auth: auth, session: s);
+        },
+      ),
     );
   }
 }

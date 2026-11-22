@@ -5,8 +5,70 @@
   "tabCollections": "Collections",
   "tabSearch": "Search",
   "photosEmptyTitle": "No photos yet",
-  "photosEmptyBody": "Connect your RustCloud to see your gallery and back up the photos from this phone.",
   "collectionsEmpty": "Favourites, people, folders and stories will be here.",
   "searchHint": "Search your photos",
-  "connect": "Connect to the cloud"
+  "connect": "Connect to the cloud",
+  "connectIntro": "Your photos in your own RustCloud: the gallery, and backup from this phone.",
+  "continueAs": "Continue as {account}",
+  "@continueAs": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "useRcClientAccount": "Use the RustCloud app's account",
+  "or": "or",
+  "serverAddress": "Cloud address",
+  "errorBadAddress": "Enter the address of your cloud, like cloud.example.com.",
+  "errorNotRustCloud": "There is no RustCloud at this address.",
+  "errorNetwork": "The cloud can't be reached. Check the address and the connection.",
+  "errorCancelled": "Login was cancelled.",
+  "errorLoginFailed": "Login failed: {detail}",
+  "@errorLoginFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "noPluginWarning": "The Photos plugin is not on this cloud: ask the administrator to install it.",
+  "noPluginTitle": "No Photos plugin",
+  "noPluginBody": "The gallery needs the Photos (rc-photo) plugin on the cloud. Ask the administrator to install and enable it.",
+  "account": "Account",
+  "logout": "Log out",
+  "loggedInViaAccount": "Through the RustCloud app ({account})",
+  "@loggedInViaAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "loggedInViaBrowser": "Logged in through the browser",
+  "photosInCloud": "{count, plural, one{{count} photo in the cloud} other{{count} photos in the cloud}}",
+  "@photosInCloud": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "photoFolders": "Folders: {names}",
+  "@photoFolders": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "indexing": "Processing {count} more",
+  "@indexing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timelineSoon": "The timeline comes in the next version."
 }
