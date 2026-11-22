@@ -37,6 +37,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   String _problem(AppLocalizations l, LoginException e) => switch (e.problem) {
     LoginProblem.notRustCloud => l.errorNotRustCloud,
     LoginProblem.network => l.errorNetwork,
+    LoginProblem.untrustedCertificate => l.errorUntrustedCertificate,
     LoginProblem.cancelled => l.errorCancelled,
     LoginProblem.failed => l.errorLoginFailed(e.detail),
   };

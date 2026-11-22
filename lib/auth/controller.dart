@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../api/auth.dart';
 import '../api/client.dart';
 import '../api/models.dart';
+import '../api/trust.dart';
 import 'account_source.dart';
 import 'native.dart';
 import 'session_store.dart';
@@ -24,6 +25,9 @@ enum LoginProblem {
   /// Nothing answers there, or no RustCloud.
   notRustCloud,
   network,
+
+  /// The server's certificate is signed by a CA the device doesn't trust.
+  untrustedCertificate,
 
   /// The user closed the browser or refused.
   cancelled,
@@ -60,9 +64,12 @@ class AuthController extends ChangeNotifier {
     required this.native,
     required this.store,
     RcClient Function(Uri, TokenSource?)? makeClient,
-  }) : _makeClient = makeClient ?? ((s, a) => RcClient(s, a));
+    Trust? trust,
+  }) : _makeClient = makeClient ?? ((s, a) => RcClient(s, a)),
+       _trust = trust ?? Trust();
 
   final NativeBridge native;
+  final Trust _trust;
   final SessionStore store;
   final RcClient Function(Uri, TokenSource?) _makeClient;
 
@@ -79,6 +86,7 @@ class AuthController extends ChangeNotifier {
   /// once, offline too. Who the user is is read when the server answers.
   Future<void> start() async {
     try {
+      await trustUserCertificates();
       final saved = await store.readLogin();
       if (saved != null) {
         final source = await _sourceFor(saved);
@@ -135,6 +143,23 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Trusts the CAs the user installed on the device. Read again before each
+  /// login, so one installed while the app runs counts.
+  Future<void> trustUserCertificates() async {
+    try {
+      _trust.add(await native.userCertificates());
+    } catch (_) {
+      // Not on this platform: the system's roots only.
+    }
+  }
+
+  static LoginException _networkProblem(NetworkException e) => LoginException(
+    e.untrustedCertificate
+        ? LoginProblem.untrustedCertificate
+        : LoginProblem.network,
+    e.message,
+  );
+
   /// RustCloud accounts on the phone (rc-client), to offer before the browser.
   Future<List<String>> phoneAccounts() async {
     try {
@@ -164,10 +189,11 @@ class AuthController extends ChangeNotifier {
 
   /// Checks that [server] is RustCloud.
   Future<ServerInfo> checkServer(Uri server) async {
+    await trustUserCertificates();
     try {
       return await _makeClient(server, null).info();
     } on NetworkException catch (e) {
-      throw LoginException(LoginProblem.network, e.message);
+      throw _networkProblem(e);
     } on ApiException catch (e) {
       throw LoginException(LoginProblem.notRustCloud, '${e.status} ${e.code}');
     } on FormatException catch (e) {
@@ -205,7 +231,7 @@ class AuthController extends ChangeNotifier {
         e.message.isEmpty ? e.code : e.message,
       );
     } on NetworkException catch (e) {
-      throw LoginException(LoginProblem.network, e.message);
+      throw _networkProblem(e);
     }
     await store.tokens.write(tokens);
     final login = BrowserLogin(server);
@@ -216,6 +242,7 @@ class AuthController extends ChangeNotifier {
 
   /// Logs in through rc-client's account (the server is the account's).
   Future<ServerCheck> loginWithAccount(String account) async {
+    await trustUserCertificates();
     final probe = await native.accountToken(account);
     if (probe.token == null) {
       throw LoginException(switch (probe.error) {
@@ -241,7 +268,7 @@ class AuthController extends ChangeNotifier {
     try {
       user = await client.me();
     } on NetworkException catch (e) {
-      throw LoginException(LoginProblem.network, e.message);
+      throw _networkProblem(e);
     } on SessionEndedException catch (e) {
       throw LoginException(LoginProblem.failed, e.reason);
     } on ApiException catch (e) {

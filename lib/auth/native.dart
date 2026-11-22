@@ -49,6 +49,10 @@ abstract class NativeBridge {
   Future<AccountToken> accountToken(String account);
 
   Future<String> deviceName();
+
+  /// CA certificates the user installed on the device (DER), to trust them
+  /// as the system's own (lib/api/trust.dart).
+  Future<List<Uint8List>> userCertificates();
 }
 
 class AndroidBridge implements NativeBridge {
@@ -82,4 +86,8 @@ class AndroidBridge implements NativeBridge {
   @override
   Future<String> deviceName() async =>
       (await _ch.invokeMethod<String>('deviceName')) ?? 'Android';
+
+  @override
+  Future<List<Uint8List>> userCertificates() async =>
+      (await _ch.invokeListMethod<Uint8List>('userCertificates')) ?? const [];
 }

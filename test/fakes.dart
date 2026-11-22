@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:rc_photo/api/auth.dart';
 import 'package:rc_photo/auth/native.dart';
 import 'package:rc_photo/auth/session_store.dart';
@@ -37,6 +39,12 @@ class FakeBridge implements NativeBridge {
 
   @override
   Future<String> deviceName() async => 'Test phone';
+
+  /// What `userCertificates` answers.
+  List<Uint8List> certificates = [];
+
+  @override
+  Future<List<Uint8List>> userCertificates() async => certificates;
 }
 
 /// [SessionStore] in memory.

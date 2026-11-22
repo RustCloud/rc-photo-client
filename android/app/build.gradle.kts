@@ -23,10 +23,12 @@ android {
         versionName = flutter.versionName
     }
 
-    // Release builds are signed with the organisation's key, the same as the RustCloud client's,
-    // so the phone account gives this app a token without asking. The release workflow puts the
-    // key into a file and passes these variables; without them a release build gets the debug
-    // key (installs, but can't update a properly signed one).
+    // Signed with the organisation's key, the same as the RustCloud client's, so the phone
+    // account (rc-client) trusts this app: it checks that the signers match and only then gives
+    // a token without asking and shows its account. The workflows (release.yml, ci.yml) put the
+    // key into a file and pass these variables; debug builds use it too then, so the APK from a
+    // CI run works with the client. Without them (local builds) the debug key is used: the app
+    // installs, but the client treats it as another developer's.
     val keystore = System.getenv("ANDROID_KEYSTORE_FILE")
     signingConfigs {
         if (keystore != null) {
@@ -41,9 +43,9 @@ android {
     }
 
     buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
-        }
+        val signing = signingConfigs.getByName(if (keystore != null) "release" else "debug")
+        debug { signingConfig = signing }
+        release { signingConfig = signing }
     }
 }
 

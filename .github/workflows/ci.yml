@@ -20,7 +20,33 @@ jobs:
           flutter-version: '3.44.0'
           channel: stable
           cache: true
+      # The organisation's key, as in release.yml, so the debug APK works with rc-client's phone
+      # account (it trusts apps signed by its own key). Pull requests from forks get no secrets:
+      # their APK has the debug key.
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            echo "::warning::No ANDROID_KEYSTORE secret: the debug APK has the debug key, rc-client won't trust it"
+            exit 0
+          fi
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          {
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$KEY_ALIAS"
+          } >> "$GITHUB_ENV"
       - run: sh ci.sh
+      - name: Check the signature
+        run: |
+          tools=$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
+          "$tools/apksigner" verify --print-certs out/rc-photo-debug.apk | tee certs.txt
+          echo "::notice title=Signing certificate::$(grep -m1 'SHA-256' certs.txt)"
+          rm -f "$RUNNER_TEMP/release.jks"
       - uses: actions/upload-artifact@v4
         with:
           name: rc-photo-debug-apk

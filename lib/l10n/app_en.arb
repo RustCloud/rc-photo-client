@@ -23,6 +23,7 @@
   "errorBadAddress": "Enter the address of your cloud, like cloud.example.com.",
   "errorNotRustCloud": "There is no RustCloud at this address.",
   "errorNetwork": "The cloud can't be reached. Check the address and the connection.",
+  "errorUntrustedCertificate": "The cloud's certificate isn't trusted: it is signed by a certificate authority this phone doesn't know. If it is your own CA, install its root certificate: Settings → Security → Encryption & credentials → Install a certificate → CA certificate.",
   "errorCancelled": "Login was cancelled.",
   "errorLoginFailed": "Login failed: {detail}",
   "@errorLoginFailed": {

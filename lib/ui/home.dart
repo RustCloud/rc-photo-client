@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api/auth.dart';
 import '../api/models.dart';
 import '../auth/controller.dart';
 import '../auth/session_store.dart';
@@ -156,12 +157,17 @@ class _PhotosTabState extends State<_PhotosTab> {
           } else if (snap.hasError) {
             final e = snap.error;
             final noPlugin = e is ApiException && e.status == 404;
+            final untrusted = e is NetworkException && e.untrustedCertificate;
             child = _Message(
               icon: noPlugin
                   ? Icons.extension_off_outlined
                   : Icons.cloud_off_outlined,
               title: noPlugin ? l.noPluginTitle : l.errorNetwork,
-              body: noPlugin ? l.noPluginBody : '$e',
+              body: noPlugin
+                  ? l.noPluginBody
+                  : untrusted
+                  ? l.errorUntrustedCertificate
+                  : '$e',
             );
           } else {
             final (state, count) = snap.data!;

@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -156,12 +157,30 @@ class SessionEndedException implements Exception {
 
 /// The server could not be reached; the request may be retried later.
 class NetworkException implements Exception {
-  const NetworkException(this.message);
+  const NetworkException(this.message, {this.untrustedCertificate = false});
+
+  /// A failed request as the app tells it: the server's certificate is not
+  /// trusted (a CA the device doesn't know), or the network.
+  factory NetworkException.from(DioException e) {
+    final inner = e.error;
+    if (inner is HandshakeException &&
+        '$inner'.contains('CERTIFICATE_VERIFY_FAILED')) {
+      return NetworkException(
+        inner.osError?.message ?? inner.message,
+        untrustedCertificate: true,
+      );
+    }
+    return NetworkException(e.message ?? e.type.name);
+  }
 
   final String message;
 
+  /// TLS failed: retrying won't help until the CA is installed on the device.
+  final bool untrustedCertificate;
+
   @override
-  String toString() => 'NetworkException($message)';
+  String toString() =>
+      'NetworkException(${untrustedCertificate ? 'certificate: ' : ''}$message)';
 }
 
 /// The token endpoint, without a session.
@@ -198,7 +217,7 @@ class OAuthClient {
         ),
       );
     } on DioException catch (e) {
-      throw NetworkException(e.message ?? e.type.name);
+      throw NetworkException.from(e);
     }
     final body = r.data;
     if (r.statusCode == 200 && body is Map<String, dynamic>) {

@@ -15,6 +15,8 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.IOException
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 
 /**
  * The app's one activity, and the native side of channel `com.rustcloud.photos/native`:
@@ -30,6 +32,7 @@ import java.io.IOException
  * - `accountToken(name)`: a 10-minute access token from rc-client:
  *   `{token, server, expiresAt}` or `{error: "network" | "login" | "cancelled" | "failed", message}`.
  * - `deviceName()`: the phone's model, shown in the server's list of sessions.
+ * - `userCertificates()`: the CA certificates the user installed (DER), for Dart to trust.
  */
 class MainActivity : FlutterActivity() {
   private var login: MethodChannel.Result? = null
@@ -49,6 +52,7 @@ class MainActivity : FlutterActivity() {
       "chooseAccount" -> chooseAccount(result)
       "accountToken" -> accountToken(call.argument<String>("name")!!, result)
       "deviceName" -> result.success(deviceName())
+      "userCertificates" -> result.success(userCertificates())
       else -> result.notImplemented()
     }
   }
@@ -172,5 +176,20 @@ class MainActivity : FlutterActivity() {
     const val ACCOUNT_TYPE = "com.rustcloud.account"
     const val TOKEN_TYPE = "api"
     const val CHOOSE_ACCOUNT = 7101
+  }
+
+  // ── Certificates ────────────────────────────────────────────────────
+
+  /**
+   * The CA certificates the user installed (DER). `AndroidCAStore` lists the system's and the
+   * user's; the user's have aliases `user:…`. Dart trusts the system's by itself.
+   */
+  private fun userCertificates(): List<ByteArray> = try {
+    val store = KeyStore.getInstance("AndroidCAStore").apply { load(null) }
+    store.aliases().toList()
+      .filter { it.startsWith("user:") }
+      .mapNotNull { (store.getCertificate(it) as? X509Certificate)?.encoded }
+  } catch (e: Exception) {
+    emptyList()
   }
 }

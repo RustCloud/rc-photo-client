@@ -191,7 +191,7 @@ class RcClient {
           inner is ApiException) {
         throw inner!;
       }
-      throw NetworkException(e.message ?? e.type.name);
+      throw NetworkException.from(e);
     }
     final status = r.statusCode ?? 0;
     if (status >= 400) {
