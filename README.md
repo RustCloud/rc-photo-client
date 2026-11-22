@@ -20,10 +20,10 @@ sh ci.sh         # анализ, формат, тесты, debug-APK в out/
 sh ci.sh test    # без APK
 ```
 
-Без локального Flutter — в Docker-образе `ghcr.io/cirruslabs/flutter:3.44.0`:
+На buildserver (Flutter в `/root/flutter-sdk`, Android SDK в `/root/android-sdk`):
 
 ```sh
-sh tools/docker-ci.sh
+sh tools/buildserver-ci.sh
 ```
 
 ## Проверка сервера

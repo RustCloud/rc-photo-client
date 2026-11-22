@@ -25,7 +25,7 @@
 | Вход | Аккаунт rc-client, если он установлен (Android), иначе свой вход OAuth 2.0 + PKCE через браузер. Пароль приложения — будущий вопрос 1. |
 | Интерфейс | Ориентир — Google Фото: лента с группами по дням, щипок меняет сетку, просмотр с листанием, «Освободить место», истории. Material 3, тёмная тема, русский и английский. |
 | Минимальные версии | Android 8.0 (`minSdk 26`), `targetSdk` и `compileSdk` — по умолчанию Flutter (36 во Flutter 3.44). iOS — когда дойдём. |
-| Сборка и тесты | buildserver, Docker-образ `ghcr.io/cirruslabs/flutter` с зафиксированной версией. Эмулятора нет (нет `/dev/kvm`), поэтому: `flutter test` (логика, виджеты, golden-скриншоты), интеграционные тесты API на чистом Dart против настоящего rustcloud, вживую — на телефоне пользователя. |
+| Сборка и тесты | buildserver: Flutter 3.44.0 (`/root/flutter-sdk`), Android SDK (`/root/android-sdk`), JDK 21; та же версия Flutter в GitHub Actions. Эмулятора нет (нет `/dev/kvm`), поэтому: `flutter test` (логика, виджеты, golden-скриншоты), интеграционные тесты API на чистом Dart против настоящего rustcloud, вживую — на телефоне пользователя. |
 | `applicationId` | `com.rustcloud.photos` (схема входа `com.rustcloud.photos:/callback`). Ключ подписи — будущий вопрос 2. |
 
 ## 2. Что уже есть на сервере — проверено (фаза 0)
@@ -88,7 +88,7 @@ tools/      проверки на buildserver
 - Модели API (`Entry`, `PhotoState`, `Node`, ошибки) с тестами разбора на примерах реальных ответов
   из фазы 0 (`test/fixtures/`).
 - `ci.sh`: `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test`,
-  `flutter build apk --debug` → `out/`. Запускается на buildserver в образе Flutter и в GitHub Actions.
+  `flutter build apk --debug` → `out/`. Запускается на buildserver (`tools/buildserver-ci.sh`) и в GitHub Actions.
 - README: что это, сборка, тесты.
 
 ## 5. Фаза 2 — вход и сервер

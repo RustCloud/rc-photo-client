@@ -1,5 +1,5 @@
 #!/bin/sh
-# Checks and builds the app: the same steps on buildserver (tools/docker-ci.sh) and in CI.
+# Checks and builds the app: the same steps on buildserver (tools/buildserver-ci.sh) and in CI.
 # Needs flutter on PATH (with the Android SDK for the APK). The debug APK goes to out/.
 #   sh ci.sh            analyze, format, tests, debug APK
 #   sh ci.sh test       without the APK

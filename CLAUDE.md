@@ -11,7 +11,7 @@ Flutter-приложение для телефонов (Android, позже iOS)
 - Интерфейс — по мотивам Google Фото, но своя реализация.
 - Локально нет Flutter, Docker и Gradle. Сборка и тесты — на buildserver в
   `/root/build/rc-photo-client`: синхронизировать файлы (`tar` по ssh, без `.dart_tool` и `build`),
-  затем `sh tools/docker-ci.sh [test]`. Форматировать — `sh tools/docker-ci.sh -- dart format lib test`.
+  затем `sh tools/buildserver-ci.sh [test]`. Форматировать — `sh tools/buildserver-ci.sh -- dart format lib test`.
 - `lib/api` — чистый Dart, без импорта Flutter: его тесты должны уметь идти против настоящего
   сервера.
 - Тексты интерфейса — только через `lib/l10n/app_{en,ru}.arb`.
