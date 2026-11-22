@@ -45,7 +45,11 @@ android {
     buildTypes {
         val signing = signingConfigs.getByName(if (keystore != null) "release" else "debug")
         debug { signingConfig = signing }
-        release { signingConfig = signing }
+        release {
+            signingConfig = signing
+            // Flutter shrinks release builds with R8; these keep what libraries create by reflection.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
     }
 }
 

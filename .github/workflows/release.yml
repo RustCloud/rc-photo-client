@@ -90,6 +90,7 @@ jobs:
           apk="out/RustCloudPhotos_${{ steps.version.outputs.version }}_android.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$apk"
           "$tools/apksigner" verify --print-certs "$apk" | tee certs.txt
+          sh tools/check-apk.sh "$apk"
           # The certificate on the run's page, to compare with the client's APK.
           echo "::notice title=Signing certificate::$(grep -m1 'SHA-256' certs.txt)"
           rm -f "$ANDROID_KEYSTORE_FILE"
