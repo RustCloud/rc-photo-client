@@ -23,10 +23,26 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release builds are signed with the organisation's key, the same as the RustCloud client's,
+    // so the phone account gives this app a token without asking. The release workflow puts the
+    // key into a file and passes these variables; without them a release build gets the debug
+    // key (installs, but can't update a properly signed one).
+    val keystore = System.getenv("ANDROID_KEYSTORE_FILE")
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                // As apksigner in the client's workflow: the key's password is the store's.
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // The release key is an open question (PLAN.md, section 11, question 2).
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (keystore != null) "release" else "debug")
         }
     }
 }

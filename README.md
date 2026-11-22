@@ -26,6 +26,12 @@ sh ci.sh test    # без APK
 sh tools/buildserver-ci.sh
 ```
 
+## Выпуск
+
+Как у клиента: тег `v<версия>` (версия — из `pubspec.yaml`, до `+`) собирает APK, подписывает ключом
+организации и публикует релиз с `RustCloudPhotos_<версия>_android.apk` и `SHA256SUMS`. Пуш в ветку
+`release-check` или ручной запуск (Actions → Release) только собирает — APK в артефактах запуска.
+
 ## Проверка сервера
 
 `tools/api-check.sh` поднимает чистый RustCloud с плагином в Docker и проверяет всё, на что
