@@ -5,7 +5,7 @@ import '../api/models.dart';
 import '../auth/controller.dart';
 import '../auth/session_store.dart';
 import '../backup/controller.dart';
-import '../backup/phone_media.dart';
+import '../backup/services.dart';
 import '../l10n/app_localizations.dart';
 import 'backup.dart';
 
@@ -17,12 +17,12 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.auth,
     required this.session,
-    required this.media,
+    required this.backup,
   });
 
   final AuthController auth;
   final Session session;
-  final PhoneMedia media;
+  final BackupServices backup;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openBackup(BuildContext context) {
     final controller = BackupController(
       client: widget.session.client,
-      media: widget.media,
+      services: widget.backup,
       store: widget.auth.store,
     );
     Navigator.of(context)

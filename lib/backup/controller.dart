@@ -6,7 +6,9 @@ import '../api/models.dart';
 import '../auth/session_store.dart';
 import 'folders.dart';
 import 'phone_media.dart';
+import 'services.dart';
 import 'settings.dart';
+import 'store.dart';
 
 /// Why the backup's screen can't do what was asked.
 enum BackupProblem {
@@ -27,13 +29,18 @@ enum BackupProblem {
 class BackupController extends ChangeNotifier {
   BackupController({
     required this.client,
-    required this.media,
+    required this.services,
     required this.store,
   });
 
   final RcClient client;
-  final PhoneMedia media;
+  final BackupServices services;
   final SessionStore store;
+
+  PhoneMedia get media => services.media;
+
+  /// Files by state, from the backup's store.
+  Counts counts = const {};
 
   bool loading = true;
   bool saving = false;
@@ -80,6 +87,7 @@ class BackupController extends ChangeNotifier {
         chosen.addAll(albums.where((a) => a.isCamera).map((a) => a.id));
       }
       await _readFolders();
+      await readCounts();
     } finally {
       loading = false;
       notifyListeners();
@@ -119,6 +127,27 @@ class BackupController extends ChangeNotifier {
         problemDetail = '$e';
     }
   }
+
+  Future<void> readCounts() async {
+    try {
+      counts = await (await services.store).counts();
+    } catch (_) {
+      counts = const {};
+    }
+  }
+
+  /// Changes a condition (Wi-Fi, charging, deleting, on/off): kept and
+  /// applied at once, no folders to make.
+  Future<void> setOptions(
+    BackupSettings Function(BackupSettings) change,
+  ) async {
+    saved = change(saved);
+    notifyListeners();
+    await store.writeBackup(saved);
+    await services.scheduler.apply(saved);
+  }
+
+  Future<void> syncNow() => services.scheduler.syncNow();
 
   /// Asks Android for the photos; false if it said no (then only the
   /// system settings can change it).
@@ -180,7 +209,7 @@ class BackupController extends ChangeNotifier {
     problem = null;
     notifyListeners();
     try {
-      final settings = BackupSettings(
+      final settings = saved.copyWith(
         rootId: r.id,
         rootName: r.name,
         device: device,
@@ -189,6 +218,8 @@ class BackupController extends ChangeNotifier {
       saved = await CloudFolders(client).apply(settings);
       device = saved.device;
       await store.writeBackup(saved);
+      await services.scheduler.apply(saved);
+      if (saved.enabled) await services.scheduler.syncNow();
       return true;
     } catch (e) {
       _fail(e);

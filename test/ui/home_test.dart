@@ -16,7 +16,13 @@ void main() {
       store: MemorySessionStore(),
     );
     await auth.start();
-    await tester.pumpWidget(RcPhotoApp(auth: auth, locale: const Locale('ru')));
+    await tester.pumpWidget(
+      RcPhotoApp(
+        auth: auth,
+        backup: fakeServices(),
+        locale: const Locale('ru'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Адрес облака'), findsOneWidget);
     expect(find.text('Войти через приложение RustCloud'), findsOneWidget);
@@ -36,7 +42,13 @@ void main() {
       store: MemorySessionStore(),
     );
     await auth.start();
-    await tester.pumpWidget(RcPhotoApp(auth: auth, locale: const Locale('en')));
+    await tester.pumpWidget(
+      RcPhotoApp(
+        auth: auth,
+        backup: fakeServices(),
+        locale: const Locale('en'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Continue as alice@cloud.example.com'), findsOneWidget);
     expect(find.text('or'), findsOneWidget);
@@ -55,7 +67,13 @@ void main() {
       makeClient: (s, a) => _OfflineClient(s, a),
     );
     await auth.start();
-    await tester.pumpWidget(RcPhotoApp(auth: auth, locale: const Locale('ru')));
+    await tester.pumpWidget(
+      RcPhotoApp(
+        auth: auth,
+        backup: fakeServices(),
+        locale: const Locale('ru'),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Фото'), findsWidgets);
 

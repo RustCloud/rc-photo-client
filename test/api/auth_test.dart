@@ -211,6 +211,23 @@ void main() {
     },
   );
 
+  test('the backup worker refreshed meanwhile: its stored pair is taken, '
+      'the old refresh token is not sent', () async {
+    final store = MemoryTokenStore(pair('a0', 'r0'));
+    // The app's session holds a0/r0 in memory; the worker's engine has its own.
+    final app = RcClient(server.uri, session(store));
+    final worker = RcClient(server.uri, session(store));
+    server.access = 'x';
+    await worker.me(); // r0 → r1
+    server.access = 'y';
+    await worker.me(); // r1 → r2: r0 is now refused by the server
+    expect(server.refreshCalls, 2);
+
+    await app.me(); // a0 → 401 → the stored a2, valid: no refresh
+    expect(server.refreshCalls, 2);
+    expect(server.ended, isFalse);
+  });
+
   test('refused refresh ends the session', () async {
     server
       ..access = 'a-rotated'

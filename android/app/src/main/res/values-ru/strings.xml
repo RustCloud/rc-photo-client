@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RustCloud Фото</string>
+    <string name="backup_running">Резервное копирование фото</string>
+    <string name="backup_channel">Резервная копия</string>
 </resources>

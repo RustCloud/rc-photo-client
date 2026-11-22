@@ -39,6 +39,11 @@ class BackupSettings {
     this.device = '',
     this.deviceFolderId,
     this.albums = const [],
+    this.enabled = true,
+    this.wifiOnly = false,
+    this.videoWifiOnly = true,
+    this.chargingOnly = false,
+    this.deleteInCloud = false,
   });
 
   factory BackupSettings.fromJson(Map<String, dynamic> j) => BackupSettings(
@@ -50,6 +55,11 @@ class BackupSettings {
       for (final a in (j['albums'] as List<dynamic>? ?? const []))
         if (a is Map<String, dynamic>) BackupAlbum.fromJson(a),
     ],
+    enabled: j['enabled'] as bool? ?? true,
+    wifiOnly: j['wifiOnly'] as bool? ?? false,
+    videoWifiOnly: j['videoWifiOnly'] as bool? ?? true,
+    chargingOnly: j['chargingOnly'] as bool? ?? false,
+    deleteInCloud: j['deleteInCloud'] as bool? ?? false,
   );
 
   /// A folder of the Photos plugin (`state.folders`); null until chosen.
@@ -60,6 +70,20 @@ class BackupSettings {
   final String device;
   final String? deviceFolderId;
   final List<BackupAlbum> albums;
+
+  /// Copies at all (the switch at the top of the screen).
+  final bool enabled;
+
+  /// Waits for Wi-Fi (an unmetered network) for everything, or for videos.
+  final bool wifiOnly;
+  final bool videoWifiOnly;
+
+  /// Only while the phone charges.
+  final bool chargingOnly;
+
+  /// A photo deleted on the phone goes to the cloud's trash too. Off: the
+  /// cloud keeps everything ever copied.
+  final bool deleteInCloud;
 
   /// The cloud folders exist for everything chosen.
   bool get ready =>
@@ -75,6 +99,11 @@ class BackupSettings {
     String? deviceFolderId,
     bool clearDeviceFolder = false,
     List<BackupAlbum>? albums,
+    bool? enabled,
+    bool? wifiOnly,
+    bool? videoWifiOnly,
+    bool? chargingOnly,
+    bool? deleteInCloud,
   }) => BackupSettings(
     rootId: rootId ?? this.rootId,
     rootName: rootName ?? this.rootName,
@@ -83,6 +112,11 @@ class BackupSettings {
         ? null
         : deviceFolderId ?? this.deviceFolderId,
     albums: albums ?? this.albums,
+    enabled: enabled ?? this.enabled,
+    wifiOnly: wifiOnly ?? this.wifiOnly,
+    videoWifiOnly: videoWifiOnly ?? this.videoWifiOnly,
+    chargingOnly: chargingOnly ?? this.chargingOnly,
+    deleteInCloud: deleteInCloud ?? this.deleteInCloud,
   );
 
   Map<String, dynamic> toJson() => {
@@ -91,6 +125,11 @@ class BackupSettings {
     'device': device,
     'deviceFolder': ?deviceFolderId,
     'albums': [for (final a in albums) a.toJson()],
+    'enabled': enabled,
+    'wifiOnly': wifiOnly,
+    'videoWifiOnly': videoWifiOnly,
+    'chargingOnly': chargingOnly,
+    'deleteInCloud': deleteInCloud,
   };
 }
 

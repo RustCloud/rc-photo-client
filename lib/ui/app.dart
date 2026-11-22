@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../auth/controller.dart';
-import '../backup/phone_media.dart';
+import '../backup/services.dart';
 import '../l10n/app_localizations.dart';
 import 'connect.dart';
 import 'home.dart';
@@ -13,14 +13,14 @@ class RcPhotoApp extends StatelessWidget {
   const RcPhotoApp({
     super.key,
     required this.auth,
-    this.media = const AndroidPhoneMedia(),
+    required this.backup,
     this.locale,
   });
 
   final AuthController auth;
 
-  /// The phone's photos, for the backup.
-  final PhoneMedia media;
+  /// The phone's photos, the backup's runs and store.
+  final BackupServices backup;
 
   /// Forces a language (tests); null follows the phone.
   final Locale? locale;
@@ -52,7 +52,7 @@ class RcPhotoApp extends StatelessWidget {
           final s = auth.session;
           return s == null
               ? ConnectScreen(auth: auth)
-              : HomeScreen(auth: auth, session: s, media: media);
+              : HomeScreen(auth: auth, session: s, backup: backup);
         },
       ),
     );

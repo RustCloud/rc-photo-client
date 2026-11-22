@@ -117,7 +117,7 @@ void main() {
   group('controller', () {
     BackupController make(FakeCloud cloud, FakeMedia media) => BackupController(
       client: cloud,
-      media: media,
+      services: fakeServices(media: media),
       store: MemorySessionStore(),
     );
 
@@ -150,11 +150,19 @@ void main() {
       cloud.pluginFolders = [PhotoFolder(id: photos.id, name: 'Photos')];
       final store = MemorySessionStore();
       final media = FakeMedia();
-      var c = BackupController(client: cloud, media: media, store: store);
+      var c = BackupController(
+        client: cloud,
+        services: fakeServices(media: media),
+        store: store,
+      );
       await c.load();
       await c.save();
 
-      c = BackupController(client: cloud, media: media, store: store);
+      c = BackupController(
+        client: cloud,
+        services: fakeServices(media: media),
+        store: store,
+      );
       await c.load();
       expect(c.chosen, {'b1'});
       expect(c.dirty, isFalse);

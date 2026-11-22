@@ -62,4 +62,7 @@ flutter {
 dependencies {
     // The login page in a Custom Tab (MainActivity.browserLogin).
     implementation("androidx.browser:browser:1.8.0")
+    // The backup's runs (Backup.kt) and their notification.
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.core:core-ktx:1.13.1")
 }

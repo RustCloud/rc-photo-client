@@ -117,5 +117,157 @@
     }
   },
   "cancel": "Cancel",
-  "done": "Done"
+  "done": "Done",
+  "backupNotification": "Backup: {done} of {total}",
+  "@backupNotification": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "backupEnabled": "Back up this phone",
+  "backupStatus": "Status and log",
+  "backupSummary": "Copied {done} · waiting {pending} · failed {failed}",
+  "@backupSummary": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "pending": {
+        "type": "int"
+      },
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "backupConditions": "When",
+  "backupVideoWifi": "Videos only over Wi-Fi",
+  "backupWifiOnly": "Everything only over Wi-Fi",
+  "backupCharging": "Only while charging",
+  "backupDeleteSection": "Deleting",
+  "backupDeleteTitle": "Delete in the cloud too",
+  "backupDeleteHint": "When you delete a photo on this phone, its copy in the cloud is deleted too (it goes to the cloud's trash). Off: the cloud keeps everything ever copied.",
+  "backupSyncNow": "Back up now",
+  "backupSyncStarted": "Backup started",
+  "statusTitle": "Backup status",
+  "statusRunning": "Copying {name}",
+  "@statusRunning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "statusProgress": "{done} of {total}",
+  "@statusProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "statusIdle": "Not running now",
+  "statusLastRun": "Last run: {time}",
+  "@statusLastRun": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "statusNever": "Hasn't run yet",
+  "statusCopied": "Copied",
+  "statusWaiting": "Waiting",
+  "statusInCloud": "Already in the cloud",
+  "statusFailed": "Failed",
+  "statusLog": "Log",
+  "statusProblems": "Failed",
+  "statusNoProblems": "No failed uploads",
+  "statusEmptyLog": "Nothing yet",
+  "statusRetry": "Retry",
+  "statusRetryAll": "Retry all",
+  "logStarted": "Started: {count} to copy",
+  "@logStarted": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "logFinished": "Finished: {count} copied",
+  "@logFinished": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "logUploaded": "Copied",
+  "logSkipped": "Already in the cloud: skipped",
+  "logFailed": "Not copied: {detail}",
+  "@logFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "logNetwork": "No network: goes on when it's back",
+  "logWaitWifi": "Videos waiting for Wi-Fi: {count}",
+  "@logWaitWifi": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "logDeleted": "Deleted on the phone: moved to the cloud's trash",
+  "logQuota": "No room in the cloud: stopped ({detail})",
+  "@logQuota": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "logNoAccess": "No access to the phone's photos",
+  "logNoLogin": "The login needs you: open the app",
+  "logFolders": "The cloud folders were gone: made again",
+  "logLater": "The server asked to wait: later",
+  "logError": "Error: {detail}",
+  "@logError": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "failNetwork": "Waiting for the network",
+  "failWifi": "Waiting for Wi-Fi",
+  "failQuota": "No room in the cloud",
+  "failTooLarge": "Too large for the server",
+  "failFile": "Couldn't read the file: {detail}",
+  "@failFile": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "failServer": "Server: {detail}",
+  "@failServer": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  }
 }

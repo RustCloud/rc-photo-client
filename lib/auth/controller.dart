@@ -65,11 +65,19 @@ class AuthController extends ChangeNotifier {
     required this.store,
     RcClient Function(Uri, TokenSource?)? makeClient,
     Trust? trust,
+    this.background = false,
   }) : _makeClient = makeClient ?? ((s, a) => RcClient(s, a)),
        _trust = trust ?? Trust();
 
   final NativeBridge native;
   final Trust _trust;
+
+  /// In the backup's worker: no screen. An account that needs the user
+  /// (rc-client logged out, consent) fails the run but doesn't log the app out.
+  final bool background;
+
+  /// Run on logout and when the session ends: the backup stops and forgets.
+  final List<Future<void> Function()> onLoggedOut = [];
   final SessionStore store;
   final RcClient Function(Uri, TokenSource?) _makeClient;
 
@@ -124,7 +132,8 @@ class AuthController extends ChangeNotifier {
   Future<TokenSource?> _sourceFor(SavedLogin saved) async {
     switch (saved) {
       case AccountLogin(:final account):
-        final s = AccountTokenSource(native, account)..onEnded = _endedLater;
+        final s = AccountTokenSource(native, account);
+        if (!background) s.onEnded = _endedLater;
         return s;
       case BrowserLogin(:final server):
         final tokens = await store.tokens.read();
@@ -140,7 +149,18 @@ class AuthController extends ChangeNotifier {
     if (_session == null) return;
     _session = null;
     await store.clear();
+    await _runLoggedOut();
     notifyListeners();
+  }
+
+  Future<void> _runLoggedOut() async {
+    for (final f in onLoggedOut) {
+      try {
+        await f();
+      } catch (_) {
+        // Best effort: the login is gone either way.
+      }
+    }
   }
 
   /// Trusts the CAs the user installed on the device. Read again before each
@@ -302,6 +322,7 @@ class AuthController extends ChangeNotifier {
     }
     _session = null;
     await store.clear();
+    await _runLoggedOut();
     notifyListeners();
   }
 }

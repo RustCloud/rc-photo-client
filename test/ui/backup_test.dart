@@ -24,7 +24,7 @@ void main() {
     cloud.pluginFolders = [PhotoFolder(id: photos.id, name: 'Фото')];
     final c = BackupController(
       client: cloud,
-      media: FakeMedia(),
+      services: fakeServices(),
       store: MemorySessionStore(),
     );
     await tester.pumpWidget(_app(c));
@@ -52,7 +52,7 @@ void main() {
       ..onRequest = MediaAccess.none;
     final c = BackupController(
       client: FakeCloud(),
-      media: media,
+      services: fakeServices(media: media),
       store: MemorySessionStore(),
     );
     await tester.pumpWidget(_app(c));
@@ -62,7 +62,7 @@ void main() {
     await tester.tap(find.byKey(const Key('backup-access')));
     await tester.pumpAndSettle();
     // The longer text pushes the button down: scroll to it.
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.ensureVisible(find.byKey(const Key('backup-access')));
     await tester.pumpAndSettle();
     expect(find.text('Открыть настройки'), findsOneWidget);
     await tester.tap(find.byKey(const Key('backup-access')));
@@ -71,6 +71,6 @@ void main() {
     media.granted = MediaAccess.full;
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pumpAndSettle();
-    expect(find.text('Camera'), findsOneWidget);
+    expect(find.text('Camera', skipOffstage: false), findsOneWidget);
   });
 }

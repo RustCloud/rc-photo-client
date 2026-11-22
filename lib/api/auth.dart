@@ -283,6 +283,16 @@ class OAuthSession implements TokenSource {
       _refreshing ??= _doRefresh().whenComplete(() => _refreshing = null);
 
   Future<OAuthTokens> _doRefresh() async {
+    // The backup's worker runs in an engine of its own with the same stored
+    // tokens: if it refreshed meanwhile, its pair is the live one, and
+    // refreshing with the old token would end the session after 30 s.
+    final stored = await _store.read();
+    if (stored != null && stored.refresh != _tokens.refresh) {
+      _tokens = stored;
+      if (_clock().isBefore(stored.accessExpiresAt.subtract(_margin))) {
+        return stored;
+      }
+    }
     final old = _tokens.refresh;
     final started = _clock();
     while (true) {
@@ -302,6 +312,12 @@ class OAuthSession implements TokenSource {
         await Future<void>.delayed(retryDelay);
       } on ApiException catch (e) {
         if (e.code == 'invalid_grant') {
+          // The other engine may have refreshed at the same moment.
+          final now = await _store.read();
+          if (now != null && now.refresh != old) {
+            _tokens = now;
+            return now;
+          }
           await _end('refresh refused: ${e.message}');
         }
         rethrow;

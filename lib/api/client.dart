@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
@@ -60,6 +61,25 @@ class ShardResult {
 
   final String? etag;
   final List<Entry>? entries;
+}
+
+/// An upload in parts, as the server has it.
+class UploadState {
+  const UploadState({
+    required this.id,
+    required this.size,
+    required this.received,
+  });
+
+  factory UploadState.fromJson(Map<String, dynamic> j) => UploadState(
+    id: j['id'] as String,
+    size: (j['size'] as num?)?.toInt() ?? 0,
+    received: (j['received'] as num?)?.toInt() ?? 0,
+  );
+
+  final String id;
+  final int size;
+  final int received;
 }
 
 /// What a link is for (`POST /app/rc-photo/api/links`).
@@ -129,6 +149,80 @@ class RcClient {
       'write': write,
       'kind': 'standing',
     },
+  );
+
+  /// To the trash (recoverable there).
+  Future<void> deleteFile(String id) => _send('DELETE', '/api/v1/files/$id');
+
+  // ── Upload ──────────────────────────────────────────────────────────
+
+  /// A whole file in one request (`POST …/upload`); [mtime] in seconds.
+  Future<Node> upload(
+    String folderId,
+    String name,
+    Uint8List bytes, {
+    int? mtime,
+    bool overwrite = false,
+  }) async {
+    final q = Uri(
+      queryParameters: {
+        'name': name,
+        'mtime': ?mtime?.toString(),
+        if (overwrite) 'overwrite': 'true',
+      },
+    ).query;
+    final r = await _send(
+      'POST',
+      '/api/v1/files/$folderId/upload?$q',
+      body: bytes,
+      contentType: 'application/octet-stream',
+    );
+    return Node.fromJson(r.data as Map<String, dynamic>);
+  }
+
+  /// Starts an upload in parts (`POST …/uploads`).
+  Future<UploadState> startUpload(
+    String folderId, {
+    required String name,
+    required int size,
+    int? mtime,
+    bool overwrite = false,
+  }) async => UploadState.fromJson(
+    await _json(
+      'POST',
+      '/api/v1/files/$folderId/uploads',
+      body: {
+        'name': name,
+        'size': size,
+        'mtime': ?mtime,
+        if (overwrite) 'overwrite': true,
+      },
+    ),
+  );
+
+  /// How much of an upload the server has; `404 UPLOAD_NOT_FOUND` when it
+  /// expired (24 h without a part).
+  Future<UploadState> uploadState(String id) async =>
+      UploadState.fromJson(await _json('GET', '/api/v1/files/uploads/$id'));
+
+  /// The next part, at [offset] = what the server has.
+  Future<UploadState> uploadPart(String id, int offset, Uint8List bytes) async {
+    final r = await _send(
+      'PUT',
+      '/api/v1/files/uploads/$id?offset=$offset',
+      body: bytes,
+      contentType: 'application/octet-stream',
+    );
+    return UploadState.fromJson(r.data as Map<String, dynamic>);
+  }
+
+  /// Puts the parts together; `400 CHECKSUM_MISMATCH` drops the upload.
+  Future<Node> finishUpload(String id, String sha256) async => Node.fromJson(
+    await _json(
+      'POST',
+      '/api/v1/files/uploads/$id/finish',
+      body: {'sha256': sha256},
+    ),
   );
 
   // ── Plugin ──────────────────────────────────────────────────────────
@@ -206,6 +300,7 @@ class RcClient {
     bool auth = true,
     Map<String, String> headers = const {},
     ResponseType type = ResponseType.json,
+    String? contentType,
   }) async {
     final Response<dynamic> r;
     try {
@@ -215,6 +310,7 @@ class RcClient {
         options: Options(
           method: method,
           headers: headers,
+          contentType: contentType,
           responseType: type,
           validateStatus: (_) => true,
           extra: {_noAuth: !auth},

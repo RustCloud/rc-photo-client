@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../backup/controller.dart';
 import '../backup/phone_media.dart';
+import '../backup/store.dart';
 import '../l10n/app_localizations.dart';
+import 'backup_status.dart';
 
 /// Backup settings: where in the cloud (the gallery's folder, this phone's
 /// folder in it) and which folders of the phone. Saving makes the folders.
@@ -57,10 +59,23 @@ class _BackupScreenState extends State<BackupScreen>
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   if (c.problem != null) _problem(l),
+                  if (c.saved.ready) ..._state(l),
                   _Header(l.backupWhere),
                   ..._where(l),
                   _Header(l.backupPhoneFolders, hint: l.backupPhoneFoldersHint),
                   ..._phone(l),
+                  _Header(l.backupConditions),
+                  ..._conditions(l),
+                  _Header(l.backupDeleteSection),
+                  SwitchListTile(
+                    key: const Key('backup-delete'),
+                    title: Text(l.backupDeleteTitle),
+                    subtitle: Text(l.backupDeleteHint),
+                    isThreeLine: true,
+                    value: c.saved.deleteInCloud,
+                    onChanged: (v) =>
+                        c.setOptions((s) => s.copyWith(deleteInCloud: v)),
+                  ),
                 ],
               ),
         bottomNavigationBar: c.loading
@@ -105,6 +120,67 @@ class _BackupScreenState extends State<BackupScreen>
         ),
       ),
     );
+  }
+
+  List<Widget> _state(AppLocalizations l) => [
+    SwitchListTile(
+      key: const Key('backup-enabled'),
+      secondary: const Icon(Icons.cloud_upload_outlined),
+      title: Text(l.backupEnabled),
+      value: c.saved.enabled,
+      onChanged: (v) => c.setOptions((s) => s.copyWith(enabled: v)),
+    ),
+    ListTile(
+      key: const Key('backup-status'),
+      leading: const Icon(Icons.receipt_long_outlined),
+      title: Text(l.backupStatus),
+      subtitle: Text(
+        l.backupSummary(
+          c.counts[MediaState.done] ?? 0,
+          (c.counts[MediaState.pending] ?? 0) +
+              (c.counts[MediaState.uploading] ?? 0),
+          c.counts[MediaState.failed] ?? 0,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: _openStatus,
+    ),
+  ];
+
+  List<Widget> _conditions(AppLocalizations l) => [
+    SwitchListTile(
+      key: const Key('backup-video-wifi'),
+      title: Text(l.backupVideoWifi),
+      value: c.saved.videoWifiOnly || c.saved.wifiOnly,
+      onChanged: c.saved.wifiOnly
+          ? null
+          : (v) => c.setOptions((s) => s.copyWith(videoWifiOnly: v)),
+    ),
+    SwitchListTile(
+      key: const Key('backup-wifi'),
+      title: Text(l.backupWifiOnly),
+      value: c.saved.wifiOnly,
+      onChanged: (v) => c.setOptions((s) => s.copyWith(wifiOnly: v)),
+    ),
+    SwitchListTile(
+      key: const Key('backup-charging'),
+      title: Text(l.backupCharging),
+      value: c.saved.chargingOnly,
+      onChanged: (v) => c.setOptions((s) => s.copyWith(chargingOnly: v)),
+    ),
+  ];
+
+  Future<void> _openStatus() async {
+    final store = await c.services.store;
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            BackupStatusScreen(store: store, scheduler: c.services.scheduler),
+      ),
+    );
+    await c.readCounts();
+    if (mounted) setState(() {});
   }
 
   List<Widget> _where(AppLocalizations l) => [
