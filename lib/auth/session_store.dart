@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../api/auth.dart';
+import '../backup/settings.dart';
 
 /// How the app is logged in, kept between runs.
 sealed class SavedLogin {
@@ -54,6 +55,21 @@ class SessionStore {
 
   static const _login = 'login';
   static const _tokens = 'tokens';
+  static const _backup = 'backup';
+
+  /// The backup's choices; they belong to the login and go with it.
+  Future<BackupSettings?> readBackup() async {
+    final v = await _s.read(key: _backup);
+    if (v == null) return null;
+    try {
+      return BackupSettings.fromJson(jsonDecode(v) as Map<String, dynamic>);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  Future<void> writeBackup(BackupSettings b) =>
+      _s.write(key: _backup, value: jsonEncode(b.toJson()));
 
   Future<SavedLogin?> readLogin() async {
     final v = await _s.read(key: _login);
@@ -71,6 +87,7 @@ class SessionStore {
   Future<void> clear() async {
     await _s.delete(key: _login);
     await _s.delete(key: _tokens);
+    await _s.delete(key: _backup);
   }
 
   TokenStore get tokens => SecureTokenStore(_s);

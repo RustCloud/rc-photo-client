@@ -43,6 +43,15 @@ class MainActivity : FlutterActivity() {
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler(::handle)
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PhoneMedia.CHANNEL).setMethodCallHandler(media::handle)
+  }
+
+  /** The phone's photos (PhoneMedia.kt). */
+  private val media by lazy { PhoneMedia(this) }
+
+  override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    media.onPermissions(requestCode)
   }
 
   private fun handle(call: MethodCall, result: MethodChannel.Result) {

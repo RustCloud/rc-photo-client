@@ -4,16 +4,25 @@ import '../api/auth.dart';
 import '../api/models.dart';
 import '../auth/controller.dart';
 import '../auth/session_store.dart';
+import '../backup/controller.dart';
+import '../backup/phone_media.dart';
 import '../l10n/app_localizations.dart';
+import 'backup.dart';
 
 /// The main screen: three tabs at the bottom, as people know them from
 /// gallery apps — the timeline, collections (favourites, people, folders,
 /// stories) and search. The account button is at the top right.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.auth, required this.session});
+  const HomeScreen({
+    super.key,
+    required this.auth,
+    required this.session,
+    required this.media,
+  });
 
   final AuthController auth;
   final Session session;
+  final PhoneMedia media;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -37,6 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(l.appTitle),
         actions: [
+          IconButton(
+            key: const Key('backup'),
+            tooltip: l.backupTitle,
+            icon: const Icon(Icons.cloud_upload_outlined),
+            onPressed: () => _openBackup(context),
+          ),
           IconButton(
             key: const Key('account'),
             tooltip: l.account,
@@ -76,6 +91,21 @@ class _HomeScreenState extends State<HomeScreen> {
   static String _initial(String name) =>
       name.isEmpty ? '·' : name.characters.first.toUpperCase();
 
+  void _openBackup(BuildContext context) {
+    final controller = BackupController(
+      client: widget.session.client,
+      media: widget.media,
+      store: widget.auth.store,
+    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => BackupScreen(controller: controller),
+          ),
+        )
+        .whenComplete(controller.dispose);
+  }
+
   void _showAccount(BuildContext context) {
     final l = AppLocalizations.of(context);
     final s = widget.session;
@@ -97,6 +127,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 AccountLogin(:final account) => l.loggedInViaAccount(account),
                 BrowserLogin() => l.loggedInViaBrowser,
               }),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined),
+              title: Text(l.backupTitle),
+              onTap: () {
+                Navigator.pop(sheet);
+                _openBackup(context);
+              },
             ),
             const Divider(),
             ListTile(

@@ -71,5 +71,51 @@
       }
     }
   },
-  "timelineSoon": "The timeline comes in the next version."
+  "timelineSoon": "The timeline comes in the next version.",
+  "backupTitle": "Backup",
+  "backupWhere": "Where in the cloud",
+  "backupGalleryFolder": "Gallery folder",
+  "backupGalleryFolderNone": "Not chosen",
+  "backupNoGalleryFolders": "The gallery has no folders yet. Create one: it appears at the top of your cloud, and the gallery gets access to it.",
+  "backupCreateFolder": "Create folder “{name}”",
+  "@backupCreateFolder": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupDefaultRootName": "Photos",
+  "backupDeviceFolder": "This phone's folder",
+  "backupDeviceFolderHint": "Every phone gets its own folder inside the gallery folder.",
+  "backupPhoneFolders": "Folders on the phone",
+  "backupPhoneFoldersHint": "Each chosen folder is copied to a folder of the same name in the cloud.",
+  "backupAccessTitle": "Access to photos",
+  "backupAccessBody": "To choose folders for backup, let the app read the photos and videos on this phone.",
+  "backupAccessAllow": "Allow",
+  "backupAccessSettings": "Open settings",
+  "backupAccessDenied": "Access was refused. It can be given in the phone's settings: Apps → RustCloud Photos → Permissions → Photos and videos.",
+  "backupPartial": "The app sees only the photos you picked: only they will be copied.",
+  "backupPartialChange": "Change",
+  "backupNoAlbums": "There are no photos or videos on this phone.",
+  "backupAlbumCount": "{count, plural, one{{count} item} other{{count} items}}",
+  "@backupAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupSave": "Save and create folders",
+  "backupSaved": "Folders are ready in the cloud",
+  "backupFailed": "Didn't work: {detail}",
+  "@backupFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "cancel": "Cancel",
+  "done": "Done"
 }

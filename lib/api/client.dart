@@ -65,8 +65,9 @@ class ShardResult {
 /// What a link is for (`POST /app/rc-photo/api/links`).
 enum LinkKind { thumb, preview, original }
 
-/// The rc-photo plugin answers at this prefix.
-const photoApi = '/app/rc-photo/api';
+/// The rc-photo plugin's id, and the prefix it answers at.
+const photoAppId = 'rc-photo';
+const photoApi = '/app/$photoAppId/api';
 
 class RcClient {
   /// [auth] is null only for requests that need no session ([info]).
@@ -93,6 +94,42 @@ class RcClient {
 
   /// Ends this device's session on the server.
   Future<void> logout() => _json('POST', '/api/v1/auth/logout');
+
+  // ── Files ───────────────────────────────────────────────────────────
+
+  /// The user's root folder.
+  Future<Node> root() async =>
+      Node.fromJson(await _json('GET', '/api/v1/files/root'));
+
+  Future<List<Node>> children(String folderId) async {
+    final r = await _send('GET', '/api/v1/files/$folderId/children');
+    return (r.data as List<dynamic>)
+        .whereType<Map<String, dynamic>>()
+        .map(Node.fromJson)
+        .toList();
+  }
+
+  /// `409 NAME_TAKEN` if something of that name is there already.
+  Future<Node> createFolder(String parentId, String name) async =>
+      Node.fromJson(
+        await _json(
+          'POST',
+          '/api/v1/files/$parentId/folders',
+          body: {'name': name},
+        ),
+      );
+
+  /// Gives the Photos plugin a folder and everything inside it, for good.
+  Future<void> grantToPlugin(String folderId, {bool write = true}) => _json(
+    'POST',
+    '/api/v1/grants',
+    body: {
+      'app_id': photoAppId,
+      'node_id': folderId,
+      'write': write,
+      'kind': 'standing',
+    },
+  );
 
   // ── Plugin ──────────────────────────────────────────────────────────
 
