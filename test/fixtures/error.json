@@ -1,0 +1,6 @@
+{
+ "error": {
+  "code": "NAME_TAKEN",
+  "message": "'IMG_00000.jpg' already exists in this folder"
+ }
+}

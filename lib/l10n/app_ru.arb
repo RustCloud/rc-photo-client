@@ -1,0 +1,12 @@
+{
+  "@@locale": "ru",
+  "appTitle": "RustCloud Фото",
+  "tabPhotos": "Фото",
+  "tabCollections": "Коллекции",
+  "tabSearch": "Поиск",
+  "photosEmptyTitle": "Фото пока нет",
+  "photosEmptyBody": "Подключите облако RustCloud, чтобы видеть галерею и сохранять в нём фото с этого телефона.",
+  "collectionsEmpty": "Здесь будут избранное, люди, папки и истории.",
+  "searchHint": "Поиск по фото",
+  "connect": "Подключить облако"
+}

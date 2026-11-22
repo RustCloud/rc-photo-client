@@ -1,0 +1,12 @@
+{
+  "@@locale": "en",
+  "appTitle": "RustCloud Photos",
+  "tabPhotos": "Photos",
+  "tabCollections": "Collections",
+  "tabSearch": "Search",
+  "photosEmptyTitle": "No photos yet",
+  "photosEmptyBody": "Connect your RustCloud to see your gallery and back up the photos from this phone.",
+  "collectionsEmpty": "Favourites, people, folders and stories will be here.",
+  "searchHint": "Search your photos",
+  "connect": "Connect to the cloud"
+}

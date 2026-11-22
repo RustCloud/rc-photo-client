@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      # Same Flutter as the buildserver image (tools/docker-ci.sh).
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - run: sh ci.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rc-photo-debug-apk
+          path: out/rc-photo-debug.apk
+          retention-days: 14

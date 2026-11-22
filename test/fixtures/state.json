@@ -1,0 +1,42 @@
+{
+ "analysis": {
+  "enabled": true,
+  "parts": {
+   "clip": "downloading",
+   "ocr": "downloading",
+   "text": "downloading"
+  }
+ },
+ "faces": {
+  "enabled": false
+ },
+ "favorites": [],
+ "ffmpeg": true,
+ "folders": [
+  {
+   "id": "355f0aa6-6509-489f-b17d-b4355f4b524a",
+   "name": "Pixel 8"
+  }
+ ],
+ "names": {
+  "covers": {},
+  "faces": {},
+  "hidden": [],
+  "merged": {},
+  "names": {},
+  "next": 0
+ },
+ "people": null,
+ "progress": {},
+ "shards": [
+  "/api/v1/app-links/eyJzIjoiMjk5OTRiMWEtZWU3Mi00YmFjLTgxOWItMTIxNGYwMzA2ZGUwIiwiYSI6InJjLXBob3RvIiwidCI6eyJrIjoiYSIsInYiOiJpbmRleC8wMC5qc29uIn0sImUiOiJlNGNjYmQyNjVkYTkwMzYzYzAzYTk2ZjI5MTM4NTg2MjYxMmFjNmM5ZjQ1ZmRhNTVmYmE4NWY1NDQyOGRmY2ExIiwieCI6MTc5NTM5MjAwMH0.O0ZsDuVZMbf-uACMRYgEGQ",
+  "/api/v1/app-links/eyJzIjoiMjk5OTRiMWEtZWU3Mi00YmFjLTgxOWItMTIxNGYwMzA2ZGUwIiwiYSI6InJjLXBob3RvIiwidCI6eyJrIjoiYSIsInYiOiJpbmRleC8wMy5qc29uIn0sImUiOiI0ZWYwYzk5NDUzOTBmZTYzOGM3NmM4MjZlMDdmOTYwODI1NDBlYmUxYjJkYTdmOWUzZmFiOTc1ZmZhNTk3Y2QwIiwieCI6MTc5NTM5MjAwMH0.AFh8VsaaLpm8hh1RxJuL_g"
+ ],
+ "stories": {
+  "enabled": true,
+  "list": [],
+  "seen": []
+ },
+ "texts": [],
+ "uploadFolder": null
+}

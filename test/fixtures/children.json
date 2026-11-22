@@ -1,0 +1,38 @@
+[
+ {
+  "id": "aa57bc4b-5eab-4b87-86d5-76c011b7b8f6",
+  "parent_id": "355f0aa6-6509-489f-b17d-b4355f4b524a",
+  "name": "BIG.jpg",
+  "is_dir": false,
+  "size": 33149,
+  "mime_type": "image/jpeg",
+  "etag": "915d9694d5c0edb57beca6b478eb0b905b492f73e8424fda569c8172e4a8365d",
+  "created_at": "2026-11-22T11:27:44.023637258Z",
+  "updated_at": "2026-11-22T11:27:44.023637258Z",
+  "modified_at": "2026-11-22T11:27:44.023637258Z"
+ },
+ {
+  "id": "c9111067-fd40-4639-b78d-89a2c9bb6e12",
+  "parent_id": "355f0aa6-6509-489f-b17d-b4355f4b524a",
+  "name": "IMG_00000.jpg",
+  "is_dir": false,
+  "size": 33147,
+  "mime_type": "image/jpeg",
+  "etag": "bc7789ae7ab1f54865bfed75645e31b6b8696325cf461c0ae0f7384bf8c8d2c0",
+  "created_at": "2026-11-22T11:27:43.983049893Z",
+  "updated_at": "2026-11-22T11:27:43.983049893Z",
+  "modified_at": "2024-01-10T12:00:00Z"
+ },
+ {
+  "id": "38044c27-aa1d-40a7-b85f-feebb28f20c3",
+  "parent_id": "355f0aa6-6509-489f-b17d-b4355f4b524a",
+  "name": "IMG_00001.jpg",
+  "is_dir": false,
+  "size": 33147,
+  "mime_type": "image/jpeg",
+  "etag": "b681a0d97605cebaf0eafd6ad6228c7e0a8aca414021c199de0c3c5b3a15cf73",
+  "created_at": "2026-11-22T11:27:43.985382974Z",
+  "updated_at": "2026-11-22T11:27:43.985382974Z",
+  "modified_at": "2024-02-11T12:00:00Z"
+ }
+]

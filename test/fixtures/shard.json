@@ -1,0 +1,25 @@
+[
+ {
+  "id": "5f00d41d-c5e1-4229-8047-09cf57fe9391",
+  "name": "IMG_00015.jpg",
+  "folder": "Pixel 8",
+  "root": "355f0aa6-6509-489f-b17d-b4355f4b524a",
+  "etag": "0718327df5e8069067aac944186983506e9252f1f7a72c5d858abf0c12021ba6",
+  "size": 33148,
+  "mime": "image/jpeg",
+  "video": false,
+  "taken": "2026-05-17T10:30:00+03:00",
+  "modified": "2026-11-22T11:27:44.011037571+00:00",
+  "width": 640,
+  "height": 480,
+  "camera": "RustCloud Test Camera",
+  "lens": "Test Lens 50mm",
+  "gps": [
+   55.7558,
+   37.6173
+  ],
+  "container": "jpeg",
+  "thumb": true,
+  "preview": false
+ }
+]
