@@ -31,7 +31,8 @@ import java.util.concurrent.Executors
  *   `[{id, name, path, count, cover}]`; `path` is `DCIM/Camera/` (Android 10+, else empty),
  *   `cover` the content URI of the newest item.
  * - `thumbnail(uri, size)`: a JPEG of the item, about `size` px; null if it can't be read.
- * - `items(buckets)`: the photos and videos in those albums, for the backup.
+ * - `items(buckets)`: the photos and videos in those albums, for the backup and the timeline
+ *   (with their size as shown and a video's length in ms).
  * - `read(uri, offset, length)`: bytes of one, the original with its location.
  * - `network()`: `"unmetered"`, `"metered"` or `"none"`.
  * - `phoneName()`: the name the user gave the phone (Settings → About), else its model.
@@ -39,6 +40,9 @@ import java.util.concurrent.Executors
  */
 class PhoneMedia(private val context: Context, private val activity: Activity?) {
   private val io = Executors.newSingleThreadExecutor()
+
+  // The timeline asks for a screenful of thumbnails at once.
+  private val thumbs = Executors.newFixedThreadPool(3)
   private val main = Handler(Looper.getMainLooper())
   private var asking: MethodChannel.Result? = null
 
@@ -50,7 +54,7 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
       "thumbnail" -> {
         val uri = Uri.parse(call.argument<String>("uri")!!)
         val size = call.argument<Int>("size") ?: 256
-        background(result) { thumbnail(uri, size) }
+        background(result, thumbs) { thumbnail(uri, size) }
       }
       "phoneName" -> result.success(phoneName())
       "items" -> {
@@ -177,6 +181,10 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
       MediaStore.MediaColumns.DATE_MODIFIED,
       MediaStore.MediaColumns.DATE_TAKEN,
       MediaStore.MediaColumns.MIME_TYPE,
+      MediaStore.MediaColumns.WIDTH,
+      MediaStore.MediaColumns.HEIGHT,
+      "orientation",
+      "duration",
     )
     val marks = buckets.joinToString(",") { "?" }
     var selection = "${MediaStore.Files.FileColumns.MEDIA_TYPE} IN (" +
@@ -193,10 +201,17 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
       val modified = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
       val taken = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
       val mime = c.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+      val width = c.getColumnIndex(MediaStore.MediaColumns.WIDTH)
+      val height = c.getColumnIndex(MediaStore.MediaColumns.HEIGHT)
+      val orientation = c.getColumnIndex("orientation")
+      val duration = c.getColumnIndex("duration")
+      fun long(i: Int) = if (i < 0 || c.isNull(i)) 0L else c.getLong(i)
       while (c.moveToNext()) {
         val video = c.getInt(type) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
         val base = if (video) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val itemId = c.getLong(id)
+        // As shown: a photo turned by a quarter has its sides swapped.
+        val turned = long(orientation) % 180 == 90L
         out.add(
           mapOf(
             "id" to itemId,
@@ -207,6 +222,9 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
             "taken" to (if (c.isNull(taken)) 0L else c.getLong(taken)),
             "mime" to (c.getString(mime) ?: if (video) "video/*" else "image/*"),
             "uri" to ContentUris.withAppendedId(base, itemId).toString(),
+            "width" to if (turned) long(height) else long(width),
+            "height" to if (turned) long(width) else long(height),
+            "duration" to if (video) long(duration) else 0L,
           ),
         )
       }
@@ -278,8 +296,12 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
     return named?.trim()?.takeIf { it.isNotEmpty() } ?: Build.MODEL ?: "Android"
   }
 
-  private fun <T> background(result: MethodChannel.Result, work: () -> T) {
-    io.execute {
+  private fun <T> background(
+    result: MethodChannel.Result,
+    on: java.util.concurrent.Executor = io,
+    work: () -> T,
+  ) {
+    on.execute {
       try {
         val value = work()
         main.post { result.success(value) }

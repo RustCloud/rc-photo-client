@@ -5,9 +5,14 @@ import '../api/models.dart';
 import '../auth/controller.dart';
 import '../auth/session_store.dart';
 import '../backup/controller.dart';
+import '../backup/phone_media.dart';
 import '../backup/services.dart';
+import '../gallery/cloud_index.dart';
+import '../gallery/controller.dart';
 import '../l10n/app_localizations.dart';
 import 'backup.dart';
+import 'timeline.dart';
+import 'viewer.dart';
 
 /// The main screen: three tabs at the bottom, as people know them from
 /// gallery apps — the timeline, collections (favourites, people, folders,
@@ -28,14 +33,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _tab = 0;
+  late final GalleryController _gallery = GalleryController(
+    client: widget.session.client,
+    media: widget.backup.media,
+    backupStore: widget.backup.store,
+    readSettings: widget.auth.store.readBackup,
+    cloud: CloudIndex(widget.backup.index),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _gallery
+      ..load()
+      ..resume();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _gallery.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // New photos taken meanwhile, or access changed in the settings.
+        _gallery
+          ..load()
+          ..resume();
+      case AppLifecycleState.paused:
+        _gallery.pause();
+      default:
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final body = switch (_tab) {
-      0 => _PhotosTab(session: widget.session),
+      0 => _PhotosTab(
+        gallery: _gallery,
+        media: widget.backup.media,
+        onChooseAlbums: () => _openBackup(context),
+      ),
       1 => _Placeholder(
         icon: Icons.photo_album_outlined,
         text: l.collectionsEmpty,
@@ -103,7 +149,11 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (_) => BackupScreen(controller: controller),
           ),
         )
-        .whenComplete(controller.dispose);
+        .whenComplete(() {
+          controller.dispose();
+          // Other folders may be chosen now.
+          _gallery.load();
+        });
   }
 
   void _showAccount(BuildContext context) {
@@ -153,100 +203,153 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// Until the timeline (phase 3): what the plugin has, so a login can be
-/// checked on the phone.
-class _PhotosTab extends StatefulWidget {
-  const _PhotosTab({required this.session});
+/// The timeline of the phone's photos, with backup marks; what the cloud
+/// knows (progress, problems) above it.
+class _PhotosTab extends StatelessWidget {
+  const _PhotosTab({
+    required this.gallery,
+    required this.media,
+    required this.onChooseAlbums,
+  });
 
-  final Session session;
-
-  @override
-  State<_PhotosTab> createState() => _PhotosTabState();
-}
-
-class _PhotosTabState extends State<_PhotosTab> {
-  late Future<(PhotoState, int)> _load = _fetch();
-
-  Future<(PhotoState, int)> _fetch() async {
-    final c = widget.session.client;
-    final state = await c.photoState(today: DateTime.now());
-    var count = 0;
-    for (final link in state.shards) {
-      count += (await c.shard(link)).entries?.length ?? 0;
-    }
-    return (state, count);
-  }
+  final GalleryController gallery;
+  final PhoneMedia media;
+  final VoidCallback onChooseAlbums;
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() => _load = _fetch());
-        await _load.catchError((_) => (const PhotoState.empty(), 0));
-      },
-      child: FutureBuilder(
-        future: _load,
-        builder: (context, snap) {
-          final Widget child;
-          if (snap.connectionState != ConnectionState.done) {
-            child = const CircularProgressIndicator();
-          } else if (snap.hasError) {
-            final e = snap.error;
-            final noPlugin = e is ApiException && e.status == 404;
-            final untrusted = e is NetworkException && e.untrustedCertificate;
-            child = _Message(
-              icon: noPlugin
-                  ? Icons.extension_off_outlined
-                  : Icons.cloud_off_outlined,
-              title: noPlugin ? l.noPluginTitle : l.errorNetwork,
-              body: noPlugin
-                  ? l.noPluginBody
-                  : untrusted
-                  ? l.errorUntrustedCertificate
-                  : '$e',
+    return ListenableBuilder(
+      listenable: gallery,
+      builder: (context, _) {
+        switch (gallery.status) {
+          case GalleryStatus.loading:
+            return const Center(child: CircularProgressIndicator());
+          case GalleryStatus.noAccess:
+            return _Message(
+              icon: Icons.no_photography_outlined,
+              title: l.galleryNoAccessTitle,
+              body: l.galleryNoAccessBody,
+              action: FilledButton(
+                key: const Key('grant-access'),
+                onPressed: gallery.requestAccess,
+                child: Text(l.galleryGrantAccess),
+              ),
             );
-          } else {
-            final (state, count) = snap.data!;
-            child = _Message(
-              icon: Icons.cloud_done_outlined,
-              title: count == 0 ? l.photosEmptyTitle : l.photosInCloud(count),
-              body: [
-                if (state.folders.isNotEmpty)
-                  l.photoFolders(state.folders.map((f) => f.name).join(', ')),
-                if (state.indexing > 0) l.indexing(state.indexing),
-                l.timelineSoon,
-              ].join('\n'),
+          case GalleryStatus.noAlbums:
+            return _Message(
+              icon: Icons.photo_library_outlined,
+              title: l.galleryNoAlbumsTitle,
+              body: l.galleryNoAlbumsBody,
+              action: FilledButton(
+                key: const Key('choose-albums'),
+                onPressed: onChooseAlbums,
+                child: Text(l.galleryChooseAlbums),
+              ),
             );
-          }
-          // Scrollable, so pull-to-refresh works on a short page too.
-          return LayoutBuilder(
-            builder: (context, box) => SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: box.maxHeight),
-                child: Center(
-                  child: DefaultTextStyle.merge(
-                    style: theme.textTheme.bodyMedium,
-                    child: child,
+          case GalleryStatus.ready:
+            final items = gallery.items;
+            if (items.isEmpty) {
+              return RefreshIndicator(
+                onRefresh: gallery.refresh,
+                child: LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: box.maxHeight,
+                      child: _Message(
+                        icon: Icons.photo_outlined,
+                        title: l.photosEmptyTitle,
+                        body: l.galleryEmptyBody,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+            return TimelineGrid(
+              items: items,
+              media: media,
+              onRefresh: gallery.refresh,
+              header: _cloudBanner(context, l),
+              onOpen: (i) => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ViewerScreen(
+                    items: items,
+                    initial: i,
+                    media: media,
+                    albums: gallery.albums,
                   ),
                 ),
               ),
+            );
+        }
+      },
+    );
+  }
+
+  Widget? _cloudBanner(BuildContext context, AppLocalizations l) {
+    final e = gallery.cloudError;
+    final String? text;
+    var problem = true;
+    if (e is ApiException && e.status == 404) {
+      text = l.noPluginWarning;
+    } else if (e is NetworkException && e.untrustedCertificate) {
+      text = l.errorUntrustedCertificate;
+    } else if (e != null) {
+      text = l.galleryCloudOffline;
+    } else if (gallery.cloudState.indexing > 0) {
+      text = l.galleryCloudIndexing(gallery.cloudState.indexing);
+      problem = false;
+    } else {
+      text = null;
+    }
+    if (text == null) return null;
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      key: const Key('cloud-banner'),
+      color: problem ? scheme.errorContainer : scheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              problem ? Icons.cloud_off_outlined : Icons.hourglass_empty,
+              size: 18,
+              color: problem
+                  ? scheme.onErrorContainer
+                  : scheme.onSecondaryContainer,
             ),
-          );
-        },
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: problem
+                      ? scheme.onErrorContainer
+                      : scheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _Message extends StatelessWidget {
-  const _Message({required this.icon, required this.title, required this.body});
+  const _Message({
+    required this.icon,
+    required this.title,
+    required this.body,
+    this.action,
+  });
 
   final IconData icon;
   final String title;
   final String body;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -265,6 +368,7 @@ class _Message extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(body, textAlign: TextAlign.center),
+          if (action case final a?) ...[const SizedBox(height: 24), a],
         ],
       ),
     );

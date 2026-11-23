@@ -261,9 +261,16 @@ class RcClient {
     );
   }
 
+  /// The text behind a link the server gave (a shard of the index); links
+  /// work without a session.
+  Future<String> fetchText(String link) async {
+    final r = await _send('GET', link, auth: false, type: ResponseType.plain);
+    return r.data as String;
+  }
+
   /// Links to thumbnails, previews or originals, in the order asked (at most
-  /// 1000 per request).
-  Future<List<String>> links(List<(String id, LinkKind kind)> items) async {
+  /// 1000 per request); null for what isn't there.
+  Future<List<String?>> links(List<(String id, LinkKind kind)> items) async {
     final j = await _json(
       'POST',
       '$photoApi/links',
@@ -273,7 +280,7 @@ class RcClient {
         ],
       },
     );
-    return (j['urls'] as List<dynamic>).cast<String>();
+    return (j['urls'] as List<dynamic>).cast<String?>();
   }
 
   /// A full URL for a link the server gave (they are relative).

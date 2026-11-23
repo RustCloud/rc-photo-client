@@ -13,10 +13,12 @@ Future<void> main() async {
   final store = SessionStore();
   final backup = BackupServices.android();
   final auth = AuthController(native: const AndroidBridge(), store: store);
-  // Logged out: no more runs, and the backup's memory goes with the login.
+  // Logged out: no more runs, and what the backup and the timeline kept goes
+  // with the login.
   auth.onLoggedOut.add(() async {
     await backup.scheduler.stop();
     await (await backup.store).clear();
+    await (await backup.index).clear();
   });
   runApp(RcPhotoApp(auth: auth, backup: backup));
   await auth.start();

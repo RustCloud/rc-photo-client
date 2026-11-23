@@ -47,22 +47,6 @@
     }
   },
   "loggedInViaBrowser": "Logged in through the browser",
-  "photosInCloud": "{count, plural, one{{count} photo in the cloud} other{{count} photos in the cloud}}",
-  "@photosInCloud": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "photoFolders": "Folders: {names}",
-  "@photoFolders": {
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "indexing": "Processing {count} more",
   "@indexing": {
     "placeholders": {
@@ -71,7 +55,6 @@
       }
     }
   },
-  "timelineSoon": "The timeline comes in the next version.",
   "backupTitle": "Backup",
   "backupWhere": "Where in the cloud",
   "backupGalleryFolder": "Gallery folder",
@@ -269,5 +252,30 @@
         "type": "String"
       }
     }
-  }
+  },
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "galleryNoAccessTitle": "No access to photos",
+  "galleryNoAccessBody": "The timeline shows the photos on this phone. Allow access to them.",
+  "galleryGrantAccess": "Allow access",
+  "galleryNoAlbumsTitle": "Choose folders",
+  "galleryNoAlbumsBody": "The timeline shows the photos of the phone folders you back up. Choose them in Backup.",
+  "galleryChooseAlbums": "Choose folders",
+  "galleryEmptyBody": "The chosen folders have no photos or videos.",
+  "galleryCloudOffline": "No connection to the cloud: details from the cloud may be out of date.",
+  "galleryCloudIndexing": "{count, plural, one{The cloud is processing {count} more photo} other{The cloud is processing {count} more photos}}",
+  "@galleryCloudIndexing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "infoTitle": "Details",
+  "infoInCloud": "In the cloud",
+  "infoUploading": "Being copied to the cloud",
+  "infoFailed": "Couldn’t copy: see Backup → Status",
+  "infoNotInCloud": "Not in the cloud yet",
+  "infoOnPhone": "Folder on the phone",
+  "videoFailed": "This video can’t be played."
 }

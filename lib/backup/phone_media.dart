@@ -56,6 +56,9 @@ class MediaItem {
     required this.taken,
     required this.mime,
     required this.uri,
+    this.width = 0,
+    this.height = 0,
+    this.duration = 0,
   });
 
   factory MediaItem.fromMap(Map<Object?, Object?> m) => MediaItem(
@@ -67,6 +70,9 @@ class MediaItem {
     taken: (m['taken'] as num?)?.toInt() ?? 0,
     mime: m['mime'] as String? ?? '',
     uri: m['uri'] as String? ?? '',
+    width: (m['width'] as num?)?.toInt() ?? 0,
+    height: (m['height'] as num?)?.toInt() ?? 0,
+    duration: (m['duration'] as num?)?.toInt() ?? 0,
   );
 
   /// MediaStore's id.
@@ -82,6 +88,20 @@ class MediaItem {
   final int taken;
   final String mime;
   final String uri;
+
+  /// As shown (rotation applied); 0 when unknown.
+  final int width;
+  final int height;
+
+  /// A video's length, ms; 0 for photos.
+  final int duration;
+
+  bool get video => mime.startsWith('video/');
+
+  /// When it was taken, in the phone's time: the timeline's order and days.
+  DateTime get date => taken > 0
+      ? DateTime.fromMillisecondsSinceEpoch(taken)
+      : DateTime.fromMillisecondsSinceEpoch(modified * 1000);
 }
 
 enum NetworkKind {

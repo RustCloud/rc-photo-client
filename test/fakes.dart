@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -268,8 +269,33 @@ class FakeCloud extends RcClient {
       'folders': [
         for (final x in f) {'id': x.id, 'name': x.name},
       ],
-      'shards': ['index/00.json'],
+      'shards': shardLinks ?? ['index/00.json'],
     });
+  }
+
+  /// Links [photoState] gives; null: one, made of [indexed].
+  List<String>? shardLinks;
+
+  /// What a link gives; links not here give [indexed] as one shard.
+  final Map<String, String> shardBodies = {};
+
+  /// Links fetched, in order.
+  final List<String> fetched = [];
+
+  /// Links that answer `404` once (rewritten after the state was made).
+  final Set<String> closedOnce = {};
+
+  @override
+  Future<String> fetchText(String link) async {
+    fetched.add(link);
+    if (closedOnce.remove(link)) {
+      throw const ApiException(404, 'NOT_FOUND', '');
+    }
+    return shardBodies[link] ??
+        jsonEncode([
+          for (final (i, e) in indexed.indexed)
+            {'id': 'e$i', 'name': 'e$i.jpg', 'etag': e, 'root': 'r'},
+        ]);
   }
 
   @override
