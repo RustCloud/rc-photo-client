@@ -20,6 +20,8 @@ class TimelineGrid extends StatefulWidget {
     required this.onOpen,
     required this.onRefresh,
     this.header,
+    this.top,
+    this.topHeight = 0,
   });
 
   final List<TimelineItem> items;
@@ -29,6 +31,11 @@ class TimelineGrid extends StatefulWidget {
 
   /// Shown above the grid (the cloud's progress or problem).
   final Widget? header;
+
+  /// Scrolls with the grid, above its first group (the stories), and is
+  /// [topHeight] high.
+  final Widget? top;
+  final double topHeight;
 
   /// The numbers of columns a pinch goes through.
   static const columnSteps = [3, 5, 7];
@@ -55,6 +62,8 @@ class _TimelineGridState extends State<TimelineGrid> {
     super.dispose();
   }
 
+  double get _top => widget.top == null ? 0 : widget.topHeight;
+
   TimelineLayout _layoutFor(double width) {
     if (_layout == null ||
         !identical(_laidOut, widget.items) ||
@@ -76,14 +85,16 @@ class _TimelineGridState extends State<TimelineGrid> {
     final layout = _layout;
     if (columns == _columns || layout == null) return;
     // The photo at the top stays at the top.
-    final top = _scroll.hasClients ? layout.itemAt(_scroll.offset) : 0;
+    final first = _scroll.hasClients ? layout.itemAt(_scroll.offset - _top) : 0;
     setState(() => _columns = columns);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final now = _layout;
       if (now == null || !_scroll.hasClients || now.rows.isEmpty) return;
-      final row = now.rows[now.rowOf(top)];
+      final row = now.rows[now.rowOf(first)];
       _scroll.jumpTo(
-        row.offset.clamp(0.0, _scroll.position.maxScrollExtent).toDouble(),
+        (row.offset + _top)
+            .clamp(0.0, _scroll.position.maxScrollExtent)
+            .toDouble(),
       );
     });
   }
@@ -135,6 +146,7 @@ class _TimelineGridState extends State<TimelineGrid> {
         // the tile.
         final thumbPx = math.max(96, (layout.tile * dpr).round());
         final header = widget.header;
+        final top = widget.top;
         final grid = Listener(
           onPointerDown: _down,
           onPointerMove: _move,
@@ -146,10 +158,21 @@ class _TimelineGridState extends State<TimelineGrid> {
               key: const Key('timeline'),
               controller: _scroll,
               physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: layout.rows.length,
-              itemExtentBuilder: (i, _) =>
-                  i < layout.rows.length ? layout.heightOf(layout.rows[i]) : 0,
+              itemCount: layout.rows.length + (top == null ? 0 : 1),
+              itemExtentBuilder: (i, _) {
+                if (top != null) {
+                  if (i == 0) return _top;
+                  i--;
+                }
+                return i < layout.rows.length
+                    ? layout.heightOf(layout.rows[i])
+                    : 0;
+              },
               itemBuilder: (context, i) {
+                if (top != null) {
+                  if (i == 0) return top;
+                  i--;
+                }
                 final row = layout.rows[i];
                 if (row.isHeader) {
                   return _GroupHeader(date: row.date, by: layout.groupBy);
@@ -183,6 +206,7 @@ class _TimelineGridState extends State<TimelineGrid> {
               child: _Scroller(
                 controller: _scroll,
                 layout: layout,
+                top: _top,
                 child: grid,
               ),
             ),
@@ -357,10 +381,14 @@ class _Scroller extends StatefulWidget {
     required this.controller,
     required this.layout,
     required this.child,
+    this.top = 0,
   });
 
   final ScrollController controller;
   final TimelineLayout layout;
+
+  /// Height above the layout's first row.
+  final double top;
   final Widget child;
 
   @override
@@ -431,7 +459,7 @@ class _ScrollerState extends State<_Scroller> {
                     final rows = widget.layout.rows;
                     final row = rows.isEmpty
                         ? null
-                        : rows[widget.layout.rowAt(c.offset)];
+                        : rows[widget.layout.rowAt(c.offset - widget.top)];
                     return Positioned(
                       right: 0,
                       top: top,

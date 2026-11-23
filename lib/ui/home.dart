@@ -11,6 +11,8 @@ import '../gallery/cloud_index.dart';
 import '../gallery/controller.dart';
 import '../l10n/app_localizations.dart';
 import 'backup.dart';
+import 'people.dart';
+import 'stories.dart';
 import 'timeline.dart';
 import 'viewer.dart';
 
@@ -82,10 +84,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         media: widget.backup.media,
         onChooseAlbums: () => _openBackup(context),
       ),
-      1 => _Placeholder(
-        icon: Icons.photo_album_outlined,
-        text: l.collectionsEmpty,
-      ),
+      1 => CollectionsTab(gallery: _gallery, media: widget.backup.media),
       _ => const _SearchTab(),
     };
     return Scaffold(
@@ -272,6 +271,14 @@ class _PhotosTab extends StatelessWidget {
               media: media,
               onRefresh: gallery.refresh,
               header: _cloudBanner(context, l),
+              top: gallery.stories.isEmpty
+                  ? null
+                  : StoriesRow(
+                      gallery: gallery,
+                      media: media,
+                      stories: gallery.stories,
+                    ),
+              topHeight: StoriesRow.height,
               onOpen: (i) => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => ViewerScreen(
@@ -391,31 +398,6 @@ class _SearchTab extends StatelessWidget {
             enabled: false,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Placeholder extends StatelessWidget {
-  const _Placeholder({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: theme.colorScheme.outline),
-            const SizedBox(height: 16),
-            Text(text, textAlign: TextAlign.center),
-          ],
-        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../backup/phone_media.dart';
 import '../backup/settings.dart';
 import '../backup/store.dart';
 import 'cloud_index.dart';
+import 'people_stories.dart';
 import 'timeline.dart';
 
 enum GalleryStatus {
@@ -165,7 +166,68 @@ class GalleryController extends ChangeNotifier {
   void _rebuild() {
     if (_disposed) return;
     _items = buildTimeline(_media, _rows, cloud.byHash);
+    final byCloudId = {
+      for (final t in _items)
+        if (t.cloud case final c?) c.id: t,
+    };
+    _people = peopleOnPhone(cloud.people, cloud.state, byCloudId, _items);
+    _stories = storiesOnPhone(
+      cloud.state,
+      byCloudId,
+      seen: _seen,
+      hidden: _hidden,
+    );
     notifyListeners();
+  }
+
+  List<PersonView> _people = const [];
+  List<StoryView> _stories = const [];
+
+  /// Watched or hidden here, before the next state says so.
+  final Set<String> _seen = {};
+  final Set<String> _hidden = {};
+
+  /// People with photos on the phone (found by the plugin on the server).
+  List<PersonView> get people => _people;
+
+  /// The day's stories (made by the plugin) with photos on the phone.
+  List<StoryView> get stories => _stories;
+
+  /// The person of this id as shown now; null if gone.
+  PersonView? person(String id) => _people.where((p) => p.id == id).firstOrNull;
+
+  Future<void> storySeen(Story s) async {
+    if (!_seen.add(s.date)) return;
+    _rebuild();
+    try {
+      await client.storySeen(s.date);
+    } on Object catch (e) {
+      debugPrint('story seen: $e');
+    }
+  }
+
+  /// Hides a story and its theme for good.
+  Future<void> hideStory(Story s) async {
+    _hidden.add(s.date);
+    _rebuild();
+    await client.hideStory(s.date);
+  }
+
+  /// Names a person (an empty name takes it away).
+  Future<void> renamePerson(String id, String name) async {
+    await client.changePerson(id, name: name);
+    await refreshCloud(force: true);
+  }
+
+  Future<void> hidePerson(String id) async {
+    await client.changePerson(id, hidden: true);
+    await refreshCloud(force: true);
+  }
+
+  /// Turns finding faces on for this user: the plugin looks at every photo.
+  Future<void> turnFacesOn() async {
+    await client.setFaces(true);
+    await refreshCloud(force: true);
   }
 
   @override

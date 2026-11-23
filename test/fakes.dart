@@ -262,15 +262,43 @@ class FakeCloud extends RcClient {
   }
 
   @override
-  Future<PhotoState> photoState({DateTime? today}) async {
+  Future<Map<String, dynamic>> photoStateJson({DateTime? today}) async {
     final f = pluginFolders;
     if (f == null) throw const ApiException(404, 'APP_NOT_FOUND', '');
-    return PhotoState.fromJson({
+    return {
       'folders': [
         for (final x in f) {'id': x.id, 'name': x.name},
       ],
       'shards': shardLinks ?? ['index/00.json'],
-    });
+      'people': ?peopleLink,
+      ...extraState,
+    };
+  }
+
+  /// Link [photoState] gives to the people file (its body in [shardBodies]).
+  String? peopleLink;
+
+  /// More fields of the state (names, stories, faces).
+  Map<String, dynamic> extraState = {};
+
+  /// What the person, story and faces requests sent.
+  final List<String> pluginCalls = [];
+
+  @override
+  Future<void> changePerson(String id, {String? name, bool? hidden}) async =>
+      pluginCalls.add('person $id name=$name hidden=$hidden');
+
+  @override
+  Future<void> storySeen(String date) async => pluginCalls.add('seen $date');
+
+  @override
+  Future<void> hideStory(String date) async => pluginCalls.add('hide $date');
+
+  @override
+  Future<Map<String, dynamic>> setFaces(bool enabled) async {
+    pluginCalls.add('faces $enabled');
+    extraState['faces'] = {'enabled': enabled};
+    return {'enabled': enabled};
   }
 
   /// Links [photoState] gives; null: one, made of [indexed].

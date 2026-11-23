@@ -5,7 +5,6 @@
   "tabCollections": "Collections",
   "tabSearch": "Search",
   "photosEmptyTitle": "No photos yet",
-  "collectionsEmpty": "Favourites, people, folders and stories will be here.",
   "searchHint": "Search your photos",
   "connect": "Connect to the cloud",
   "connectIntro": "Your photos in your own RustCloud: the gallery, and backup from this phone.",
@@ -277,5 +276,50 @@
   "infoFailed": "Couldn’t copy: see Backup → Status",
   "infoNotInCloud": "Not in the cloud yet",
   "infoOnPhone": "Folder on the phone",
-  "videoFailed": "This video can’t be played."
+  "videoFailed": "This video can’t be played.",
+  "people": "People",
+  "peopleEmpty": "No people yet. The Photos plugin finds faces on the server; the people whose photos are on this phone show here.",
+  "facesOff": "Finding faces is off in the Photos plugin.",
+  "facesTurnOn": "Turn on",
+  "facesTurnOnTitle": "Find faces?",
+  "facesTurnOnBody": "The Photos plugin will look for faces in every photo on the server and group them into people. It takes a while; nothing is sent anywhere else.",
+  "personN": "Person {n}",
+  "@personN": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "personRename": "Name",
+  "personNameHint": "Who is it?",
+  "personHide": "Hide this person",
+  "personHidden": "Hidden. They can be shown again on the Photos page in the cloud.",
+  "stories": "Stories",
+  "storyYearsAgo": "{years, plural, one{A year ago} other{{years} years ago}}",
+  "@storyYearsAgo": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "storyTrip": "Trip, {when}",
+  "@storyTrip": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "storyPerson": "{name} through the years",
+  "@storyPerson": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "storyHide": "Don’t show stories like this",
+  "storyHidden": "This story and others like it won’t show again."
 }

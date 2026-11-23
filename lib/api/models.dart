@@ -7,6 +7,8 @@
 /// older app (the plugin only ever adds fields, see docs/requests.md#2).
 library;
 
+import 'dart:convert';
+
 /// A file or folder of the server (`Node` in rustcloud/docs/api/files.md).
 class Node {
   const Node({
@@ -221,7 +223,11 @@ class PhotoState {
     required this.favorites,
     required this.facesEnabled,
     required this.analysis,
+    required this.storiesEnabled,
     required this.stories,
+    required this.storiesSeen,
+    required this.merged,
+    required this.covers,
     required this.uploadFolder,
     required this.ffmpeg,
     required this.api,
@@ -239,7 +245,11 @@ class PhotoState {
       favorites = const {},
       facesEnabled = false,
       analysis = const {},
-      stories = null,
+      storiesEnabled = false,
+      stories = const [],
+      storiesSeen = const {},
+      merged = const {},
+      covers = const {},
       uploadFolder = null,
       ffmpeg = false,
       api = 0;
@@ -264,7 +274,25 @@ class PhotoState {
     facesEnabled:
         (j['faces'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
     analysis: j['analysis'] as Map<String, dynamic>? ?? const {},
-    stories: j['stories'] as Map<String, dynamic>?,
+    storiesEnabled:
+        (j['stories'] as Map<String, dynamic>?)?['enabled'] as bool? ?? false,
+    stories: _list(
+      (j['stories'] as Map<String, dynamic>?)?['list'],
+      Story.fromJson,
+    ),
+    storiesSeen: _strings(
+      (j['stories'] as Map<String, dynamic>?)?['seen'],
+    ).toSet(),
+    merged: _stringMap((j['names'] as Map<String, dynamic>?)?['merged']),
+    covers: {
+      for (final e
+          in ((j['names'] as Map<String, dynamic>?)?['covers']
+                      as Map<String, dynamic>? ??
+                  const {})
+              .entries)
+        if (e.value is Map<String, dynamic>)
+          e.key: ?FaceBox.tryJson(e.value as Map<String, dynamic>),
+    },
     uploadFolder: j['uploadFolder'] as String?,
     ffmpeg: j['ffmpeg'] as bool? ?? false,
     api: (j['api'] as num?)?.toInt() ?? 0,
@@ -299,8 +327,31 @@ class PhotoState {
   /// Photo analysis status, kept raw until the app uses it (search phase).
   final Map<String, dynamic> analysis;
 
-  /// Stories status, raw for now.
-  final Map<String, dynamic>? stories;
+  /// The administrator left stories on.
+  final bool storiesEnabled;
+
+  /// The stories showing today, newest first.
+  final List<Story> stories;
+
+  /// Dates of the stories the user watched.
+  final Set<String> storiesSeen;
+
+  /// A person merged into another (`state.names.merged`): the grouping
+  /// catches up later.
+  final Map<String, String> merged;
+
+  /// The face the user chose to show for a person.
+  final Map<String, FaceBox> covers;
+
+  /// Where a merged person went.
+  String personOf(String id) {
+    for (var i = 0; i < 16; i++) {
+      final into = merged[id];
+      if (into == null) break;
+      id = into;
+    }
+    return id;
+  }
 
   /// The folder uploads went to last (the web page remembers it).
   final String? uploadFolder;
@@ -348,6 +399,130 @@ class ApiException implements Exception {
   @override
   String toString() => 'ApiException($status $code: $message)';
 }
+
+/// A face in a photo: the photo's id and the box, in parts (0–1) of the
+/// picture as shown: `[x, y, width, height]`.
+class FaceBox {
+  const FaceBox(this.file, this.x, this.y, this.w, this.h);
+
+  static FaceBox? tryJson(Map<String, dynamic> j) {
+    final file = j['file'];
+    final b = j['b'];
+    if (file is! String || b is! List || b.length != 4) return null;
+    final n = b.whereType<num>().map((v) => v.toDouble()).toList();
+    if (n.length != 4) return null;
+    return FaceBox(file, n[0], n[1], n[2], n[3]);
+  }
+
+  final String file;
+  final double x, y, w, h;
+}
+
+/// A person the plugin found (`people.json`).
+class Person {
+  const Person({
+    required this.id,
+    required this.count,
+    required this.files,
+    this.cover,
+  });
+
+  factory Person.fromJson(Map<String, dynamic> j) => Person(
+    id: j['id'] as String,
+    count: (j['count'] as num?)?.toInt() ?? 0,
+    files: _strings(j['files']),
+    cover: j['cover'] is Map<String, dynamic>
+        ? FaceBox.tryJson(j['cover'] as Map<String, dynamic>)
+        : null,
+  );
+
+  final String id;
+
+  /// Faces found.
+  final int count;
+
+  /// Ids of the photos they are in.
+  final List<String> files;
+
+  /// The sharpest face.
+  final FaceBox? cover;
+}
+
+/// `people.json`: everyone, as the plugin last grouped them.
+List<Person> parsePeople(String body) {
+  final j = jsonDecode(body);
+  if (j is! Map<String, dynamic>) return const [];
+  return _list(j['people'], Person.fromJson);
+}
+
+/// A story of the day (`state.stories.list`): a script to play, not a video.
+class Story {
+  const Story({
+    required this.date,
+    required this.kind,
+    required this.key,
+    required this.params,
+    required this.cover,
+    required this.items,
+  });
+
+  factory Story.fromJson(Map<String, dynamic> j) => Story(
+    date: j['date'] as String? ?? '',
+    kind: j['kind'] as String? ?? '',
+    key: j['key'] as String? ?? '',
+    params: j['params'] as Map<String, dynamic>? ?? const {},
+    cover: j['cover'] as String? ?? '',
+    items: _list(j['items'], StoryItem.fromJson),
+  );
+
+  /// The day it was made for (`YYYY-MM-DD`): its id in requests.
+  final String date;
+
+  /// `on-this-day`, `trip`, `event`, `person`; others may come.
+  final String kind;
+  final String key;
+
+  /// For the title: `years`, `date`, `from`, `to`, `person`.
+  final Map<String, dynamic> params;
+
+  /// Id of the photo on its circle.
+  final String cover;
+  final List<StoryItem> items;
+}
+
+class StoryItem {
+  const StoryItem({required this.id, required this.ms, this.from, this.focus});
+
+  factory StoryItem.fromJson(Map<String, dynamic> j) {
+    final f = j['focus'];
+    return StoryItem(
+      id: j['id'] as String,
+      ms: (j['ms'] as num?)?.toInt() ?? 4500,
+      from: (j['from'] as num?)?.toInt(),
+      focus: f is List && f.length == 2
+          ? ((f[0] as num).toDouble(), (f[1] as num).toDouble())
+          : null,
+    );
+  }
+
+  final String id;
+
+  /// How long it shows.
+  final int ms;
+
+  /// A video: where its clip starts, ms.
+  final int? from;
+
+  /// Where to zoom to, in parts of the picture: a face, else the middle.
+  final (double, double)? focus;
+}
+
+Map<String, String> _stringMap(Object? v) => v is Map<String, dynamic>
+    ? {
+        for (final e in v.entries)
+          if (e.value is String) e.key: e.value as String,
+      }
+    : const {};
 
 DateTime? _date(Object? v) => v is String ? DateTime.tryParse(v) : null;
 

@@ -23,7 +23,8 @@ void main() {
     expect(s.ffmpeg, isTrue);
     expect(s.api, 0, reason: 'rc-photo 0.8 has no api field yet');
     expect(s.indexing, 0);
-    expect(s.stories?['enabled'], isTrue);
+    expect(s.storiesEnabled, isTrue);
+    expect(s.stories, isEmpty);
   });
 
   test('state with people and progress', () {

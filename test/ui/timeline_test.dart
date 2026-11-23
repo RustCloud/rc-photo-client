@@ -152,6 +152,6 @@ class _Client extends RcClient {
       const User(id: 'u', username: 'alice', displayName: 'Alice');
 
   @override
-  Future<Never> photoState({DateTime? today}) async =>
+  Future<Never> photoStateJson({DateTime? today}) async =>
       throw const NetworkException('offline');
 }

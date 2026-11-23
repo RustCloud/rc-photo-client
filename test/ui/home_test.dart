@@ -79,7 +79,7 @@ void main() {
 
     await tester.tap(find.text('Коллекции'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('избранное'), findsOneWidget);
+    expect(find.text('Люди'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('account')));
     await tester.pumpAndSettle();
@@ -100,6 +100,6 @@ class _OfflineClient extends RcClient {
       const User(id: 'u', username: 'alice', displayName: 'Alice');
 
   @override
-  Future<Never> photoState({DateTime? today}) async =>
+  Future<Never> photoStateJson({DateTime? today}) async =>
       throw const NetworkException('offline');
 }

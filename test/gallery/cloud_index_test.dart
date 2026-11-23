@@ -77,7 +77,7 @@ void main() {
       expect(index.count, 2);
       expect(index.byHash('h2')!.camera, 'Pixel 8');
       expect(index.byHash('nope'), isNull);
-      expect(store.saved.keys, {'index/00.json', 'index/01.json'});
+      expect(store.saved.keys, {'index/00.json', 'index/01.json', '#state'});
     });
 
     test('new links to unchanged shards: nothing fetched again', () async {
@@ -118,7 +118,7 @@ void main() {
       cloud.shardLinks = [a];
       await index.refresh(cloud);
       expect(index.byHash('h2'), isNull);
-      expect(store.saved.keys, {'index/00.json'});
+      expect(store.saved.keys, {'index/00.json', '#state'});
     });
 
     test('photos of folders taken back from the plugin are left out', () async {

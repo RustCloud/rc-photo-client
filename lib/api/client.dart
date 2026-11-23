@@ -231,13 +231,17 @@ class RcClient {
 
   /// The gallery state; `404 APP_NOT_FOUND` when the plugin is not installed
   /// or turned off. [today] (the phone's date) picks the stories of the day.
-  Future<PhotoState> photoState({DateTime? today}) async {
+  Future<PhotoState> photoState({DateTime? today}) async =>
+      PhotoState.fromJson(await photoStateJson(today: today));
+
+  /// [photoState] as the plugin sent it, to keep.
+  Future<Map<String, dynamic>> photoStateJson({DateTime? today}) {
     final q = today == null
         ? ''
         : '?today=${today.year.toString().padLeft(4, '0')}-'
               '${today.month.toString().padLeft(2, '0')}-'
               '${today.day.toString().padLeft(2, '0')}';
-    return PhotoState.fromJson(await _json('GET', '$photoApi/state$q'));
+    return _json('GET', '$photoApi/state$q');
   }
 
   /// One index shard by its link from [PhotoState.shards]. Links work
@@ -284,6 +288,26 @@ class RcClient {
     );
     return (j['urls'] as List<dynamic>).cast<String?>();
   }
+
+  /// Names, hides or shows a person: an empty [name] takes the name away.
+  Future<void> changePerson(String id, {String? name, bool? hidden}) => _json(
+    'PUT',
+    '$photoApi/people/$id',
+    body: {'name': ?name, 'hidden': ?hidden},
+  );
+
+  /// The user watched a story.
+  Future<void> storySeen(String date) =>
+      _json('POST', '$photoApi/stories/$date/seen');
+
+  /// Hides a story, and its theme for good.
+  Future<void> hideStory(String date) =>
+      _json('POST', '$photoApi/stories/$date/hide');
+
+  /// Turns finding faces on or off for this user; the plugin's answer is the
+  /// new status (`{enabled, state?}`).
+  Future<Map<String, dynamic>> setFaces(bool enabled) =>
+      _json('PUT', '$photoApi/faces', body: {'enabled': enabled});
 
   /// A full URL for a link the server gave (they are relative).
   Uri resolve(String link) => server.resolve(link);
