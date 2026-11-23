@@ -1,7 +1,7 @@
 name: rc_photo
 description: "Photos for RustCloud: gallery and phone backup over the rc-photo plugin."
 publish_to: 'none'
-version: 0.3.0-alpha.1+6
+version: 0.3.0-alpha.2+7
 
 environment:
   sdk: ^3.12.0

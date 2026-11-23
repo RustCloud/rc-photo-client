@@ -194,7 +194,9 @@ class RcClient {
       body: {
         'name': name,
         'size': size,
-        'mtime': ?mtime,
+        // A string: the server reads it like `?mtime=` (seconds or RFC 3339)
+        // and refuses a JSON number.
+        'mtime': ?mtime?.toString(),
         if (overwrite) 'overwrite': true,
       },
     ),
