@@ -53,6 +53,7 @@ class MediaItem {
     required this.name,
     required this.size,
     required this.modified,
+    this.added = 0,
     required this.taken,
     required this.mime,
     required this.uri,
@@ -67,6 +68,7 @@ class MediaItem {
     name: m['name'] as String? ?? '',
     size: (m['size'] as num?)?.toInt() ?? 0,
     modified: (m['modified'] as num?)?.toInt() ?? 0,
+    added: (m['added'] as num?)?.toInt() ?? 0,
     taken: (m['taken'] as num?)?.toInt() ?? 0,
     mime: m['mime'] as String? ?? '',
     uri: m['uri'] as String? ?? '',
@@ -83,6 +85,10 @@ class MediaItem {
 
   /// When the file changed, seconds.
   final int modified;
+
+  /// When it appeared on the phone (MediaStore's DATE_ADDED), seconds; 0 if
+  /// unknown.
+  final int added;
 
   /// When it was taken, ms; 0 if unknown.
   final int taken;

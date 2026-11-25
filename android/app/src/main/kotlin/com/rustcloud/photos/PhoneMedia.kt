@@ -165,8 +165,9 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
   }
 
   /**
-   * The photos and videos of [buckets]: `[{id, bucket, name, size, modified, taken, mime, uri}]`;
-   * `modified` in seconds (MediaStore's DATE_MODIFIED), `taken` in ms or 0. Items still being
+   * The photos and videos of [buckets]: `[{id, bucket, name, size, modified, added, taken, mime,
+   * uri}]`; `modified` and `added` in seconds (MediaStore's DATE_MODIFIED, DATE_ADDED), `taken` in
+   * ms or 0. Items still being
    * written (IS_PENDING, Android 10+) are left for later.
    */
   private fun items(buckets: List<String>): List<Map<String, Any?>> {
@@ -179,6 +180,7 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
       MediaStore.MediaColumns.DISPLAY_NAME,
       MediaStore.MediaColumns.SIZE,
       MediaStore.MediaColumns.DATE_MODIFIED,
+      MediaStore.MediaColumns.DATE_ADDED,
       MediaStore.MediaColumns.DATE_TAKEN,
       MediaStore.MediaColumns.MIME_TYPE,
       MediaStore.MediaColumns.WIDTH,
@@ -199,6 +201,7 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
       val name = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
       val size = c.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
       val modified = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
+      val added = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
       val taken = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
       val mime = c.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
       val width = c.getColumnIndex(MediaStore.MediaColumns.WIDTH)
@@ -219,6 +222,7 @@ class PhoneMedia(private val context: Context, private val activity: Activity?) 
             "name" to (c.getString(name) ?: "$itemId"),
             "size" to c.getLong(size),
             "modified" to c.getLong(modified),
+            "added" to long(added),
             "taken" to (if (c.isNull(taken)) 0L else c.getLong(taken)),
             "mime" to (c.getString(mime) ?: if (video) "video/*" else "image/*"),
             "uri" to ContentUris.withAppendedId(base, itemId).toString(),

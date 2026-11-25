@@ -75,6 +75,86 @@ void main() {
     expect(w.log, isEmpty);
   });
 
+  test('the cloud file keeps when it was made and when it changed', () async {
+    final w = await World.make();
+    w.media
+      ..addFile(1, 'IMG_1.jpg', taken: 1600000000000, added: 1650000000)
+      // A screenshot: no shot time, made when it came to the phone.
+      ..addFile(2, 'Screenshot_2.png', taken: 0, added: 1650000000)
+      ..addFile(3, 'old.jpg', taken: 0);
+    // Large: in parts.
+    w.media.addFile(
+      4,
+      'VID_4.mp4',
+      taken: 0,
+      added: 1660000000,
+      size: BackupEngine.simpleLimit + 1,
+      mime: 'video/mp4',
+    );
+    expect(await w.run(), RunResult.done);
+    Node f(String name) => w.cloud.find('$camera/$name')!;
+    expect(f('IMG_1.jpg').bornAt, DateTime.utc(2020, 9, 13, 12, 26, 40));
+    expect(f('Screenshot_2.png').bornAt, DateTime.utc(2022, 4, 15, 5, 20));
+    expect(f('old.jpg').bornAt, DateTime.utc(2023, 11, 14, 22, 13, 20));
+    expect(f('VID_4.mp4').bornAt, DateTime.utc(2022, 8, 8, 23, 6, 40));
+    for (final name in ['IMG_1.jpg', 'Screenshot_2.png', 'VID_4.mp4']) {
+      expect(f(name).modifiedAt, DateTime.utc(2023, 11, 14, 22, 13, 20));
+    }
+    expect([
+      for (final id in [1, 2, 3, 4]) w.row(id).timesSet,
+    ], everyElement(isTrue));
+    expect(w.cloud.timesSet, isEmpty, reason: 'nothing to fix');
+  });
+
+  test(
+    'files copied before the server kept ctime get their times once',
+    () async {
+      final w = await World.make();
+      w.cloud.keepsCtime = false;
+      w.media
+        ..addFile(1, 'IMG_1.jpg', taken: 1600000000000)
+        ..addFile(2, 'Screenshot_2.png', taken: 0, added: 1650000000);
+      await w.run();
+      expect(w.row(1).timesSet, isFalse);
+      expect(
+        w.cloud.timesSet,
+        hasLength(1),
+        reason: 'an old server: asked once',
+      );
+
+      w.cloud
+        ..keepsCtime = true
+        ..timesSet.clear();
+      await w.run();
+      final id1 = w.row(1).remoteId!, id2 = w.row(2).remoteId!;
+      expect(
+        w.cloud.timesSet,
+        unorderedEquals([
+          (id1, 1600000000, 1700000000),
+          (id2, 1650000000, 1700000000),
+        ]),
+      );
+      expect(w.cloud.nodes[id2]!.bornAt, DateTime.utc(2022, 4, 15, 5, 20));
+      expect(w.row(1).timesSet && w.row(2).timesSet, isTrue);
+
+      w.cloud.timesSet.clear();
+      await w.run();
+      expect(w.cloud.timesSet, isEmpty, reason: 'once');
+    },
+  );
+
+  test('a copy deleted in the cloud is not asked about again', () async {
+    final w = await World.make();
+    w.cloud.keepsCtime = false;
+    w.media.addFile(1, 'IMG_1.jpg');
+    await w.run();
+    w.cloud
+      ..keepsCtime = true
+      ..nodes.remove(w.row(1).remoteId);
+    await w.run();
+    expect(w.row(1).timesSet, isTrue);
+  });
+
   test(
     'a photo the cloud has already is skipped: in the gallery or the folder',
     () async {

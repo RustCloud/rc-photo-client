@@ -105,10 +105,15 @@ class BackupEngine {
 
     try {
       final queue = await _scan(full: access == MediaAccess.full);
-      if (queue.isEmpty) return RunResult.done;
-      await _log(LogKind.started, detail: '${queue.length}');
-      final result = await _upload(queue, net);
-      await _log(LogKind.finished, detail: '$_uploaded');
+      var result = RunResult.done;
+      if (queue.isNotEmpty) {
+        await _log(LogKind.started, detail: '${queue.length}');
+        result = await _upload(queue, net);
+        await _log(LogKind.finished, detail: '$_uploaded');
+      }
+      if (result == RunResult.done || result == RunResult.wifi) {
+        await _fixTimes();
+      }
       return result;
     } on _Stop catch (e) {
       if (_uploaded > 0) await _log(LogKind.finished, detail: '$_uploaded');
@@ -149,6 +154,7 @@ class BackupEngine {
             ..name = i.name
             ..size = i.size
             ..modified = i.modified
+            ..added = i.added
             ..taken = i.taken
             ..mime = i.mime
             ..uri = i.uri
@@ -163,8 +169,12 @@ class BackupEngine {
       } else if (r.state == MediaState.uploading) {
         // A run that was stopped midway.
         changed.add(r..state = MediaState.pending);
-      } else if (r.bucket != i.bucket) {
-        changed.add(r..bucket = i.bucket);
+      } else if (r.bucket != i.bucket || r.added != i.added) {
+        changed.add(
+          r
+            ..bucket = i.bucket
+            ..added = i.added,
+        );
       }
     }
     await store.putAll(changed);
@@ -181,7 +191,7 @@ class BackupEngine {
                       r.attempts < maxAttempts)),
         )
         .toList()
-      ..sort((a, b) => b.mtime.compareTo(a.mtime));
+      ..sort((a, b) => b.ctime.compareTo(a.ctime));
   }
 
   /// Files no longer on the phone: forgotten; with "delete in the cloud
@@ -285,7 +295,8 @@ class BackupEngine {
         ..remoteId = node.id
         ..remoteName = node.name
         ..uploadId = null
-        ..attempts = 0;
+        ..attempts = 0
+        ..timesSet = _hasTimes(node, row);
       await _set(row, MediaState.done);
       _known!.add(sha);
       _uploaded++;
@@ -428,7 +439,8 @@ class BackupEngine {
             folder,
             name,
             whole,
-            mtime: _mtime(row),
+            mtime: _time(row.modified),
+            ctime: _time(row.ctime),
             overwrite: overwrite,
           );
         }
@@ -475,7 +487,8 @@ class BackupEngine {
       folder,
       name: name,
       size: row.size,
-      mtime: _mtime(row),
+      mtime: _time(row.modified),
+      ctime: _time(row.ctime),
       overwrite: overwrite,
     );
     row.uploadId = up.id;
@@ -518,11 +531,51 @@ class BackupEngine {
     }
   }
 
-  /// What the server takes: not before 1970, at most a day ahead.
-  int? _mtime(MediaRow row) {
-    final t = row.mtime;
+  /// A time the server takes, seconds: not before 1970, at most a day ahead.
+  int? _time(int t) {
     final limit = _now().millisecondsSinceEpoch ~/ 1000 + 86400;
     return t <= 0 || t > limit ? null : t;
+  }
+
+  /// The cloud file has [row]'s times. Not after an `overwrite` (it keeps
+  /// its `born_at`), nor when the name was taken by the same file, nor from
+  /// a server that doesn't keep `ctime`: then [_fixTimes] sets them.
+  bool _hasTimes(Node node, MediaRow row) {
+    final born = node.bornAt;
+    final want = _time(row.ctime);
+    if (born == null) return false;
+    return want == null ||
+        (born.millisecondsSinceEpoch ~/ 1000 - want).abs() <= 1;
+  }
+
+  /// Gives the copies made before the server kept `ctime` (or that kept an
+  /// older one) the phone's times. Once per file; a server that doesn't keep
+  /// them is asked once a run.
+  Future<void> _fixTimes() async {
+    final buckets = {for (final a in settings.albums) a.bucketId};
+    final rows = (await store.all()).values.where(
+      (r) =>
+          r.state == MediaState.done &&
+          !r.timesSet &&
+          r.remoteId != null &&
+          buckets.contains(r.bucket),
+    );
+    for (final row in rows) {
+      try {
+        final node = await client.setTimes(
+          row.remoteId!,
+          born: _time(row.ctime),
+          modified: _time(row.modified),
+        );
+        if (node.bornAt == null) return; // an older server
+      } on ApiException catch (e) {
+        // Gone from the cloud or a time it won't take: nothing to fix.
+        if (e.status >= 500 || e.status == 429) return;
+      } on NetworkException {
+        return;
+      }
+      await store.put(row..timesSet = true);
+    }
   }
 
   /// `IMG_1.jpg` → `IMG_1 (2).jpg`.

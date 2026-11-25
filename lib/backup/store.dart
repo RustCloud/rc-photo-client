@@ -44,10 +44,12 @@ class MediaRow {
     required this.name,
     required this.size,
     required this.modified,
+    this.added = 0,
     required this.taken,
     required this.mime,
     required this.uri,
     this.sha256,
+    this.timesSet = false,
     this.state = MediaState.pending,
     this.remoteId,
     this.remoteName,
@@ -64,6 +66,7 @@ class MediaRow {
     name: i.name,
     size: i.size,
     modified: i.modified,
+    added: i.added,
     taken: i.taken,
     mime: i.mime,
     uri: i.uri,
@@ -75,10 +78,12 @@ class MediaRow {
     name: m['name']! as String,
     size: m['size']! as int,
     modified: m['modified']! as int,
+    added: m['added'] as int? ?? 0,
     taken: m['taken']! as int,
     mime: m['mime']! as String,
     uri: m['uri']! as String,
     sha256: m['sha256'] as String?,
+    timesSet: m['times_set'] == 1,
     state: MediaState.values.byName(m['state']! as String),
     remoteId: m['remote_id'] as String?,
     remoteName: m['remote_name'] as String?,
@@ -96,12 +101,20 @@ class MediaRow {
   String bucket;
   String name;
   int size;
+
+  /// Seconds, as in [MediaItem].
   int modified;
+  int added;
   int taken;
   String mime;
   String uri;
   String? sha256;
   MediaState state;
+
+  /// The cloud file has this file's times: [ctime] as its `born_at`,
+  /// [modified] as its `modified_at`. Files copied before the server took
+  /// `ctime` get them afterwards.
+  bool timesSet;
 
   /// The cloud file copied from it; kept to replace it when the file changes and to delete it
   /// with "delete in the cloud too".
@@ -121,8 +134,13 @@ class MediaRow {
 
   bool get isVideo => mime.startsWith('video/');
 
-  /// The time the file is sent with: taken, else changed; seconds.
-  int get mtime => taken > 0 ? taken ~/ 1000 : modified;
+  /// When the file was made, seconds: taken, else when it came to the phone,
+  /// else when it changed. Sent as `ctime`; the backup goes newest first by it.
+  int get ctime => taken > 0
+      ? taken ~/ 1000
+      : added > 0
+      ? added
+      : modified;
 
   Map<String, Object?> toDb() => {
     'id': id,
@@ -130,10 +148,12 @@ class MediaRow {
     'name': name,
     'size': size,
     'modified': modified,
+    'added': added,
     'taken': taken,
     'mime': mime,
     'uri': uri,
     'sha256': sha256,
+    'times_set': timesSet ? 1 : 0,
     'state': state.name,
     'remote_id': remoteId,
     'remote_name': remoteName,
@@ -275,7 +295,7 @@ class SqliteBackupStore implements BackupStore {
     final db = await f.openDatabase(
       where,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onConfigure: (db) async {
           // Two engines at once: wait for the other's write instead of failing.
           await db.rawQuery('PRAGMA busy_timeout = 5000');
@@ -289,10 +309,12 @@ class SqliteBackupStore implements BackupStore {
               name TEXT NOT NULL,
               size INTEGER NOT NULL,
               modified INTEGER NOT NULL,
+              added INTEGER NOT NULL DEFAULT 0,
               taken INTEGER NOT NULL,
               mime TEXT NOT NULL,
               uri TEXT NOT NULL,
               sha256 TEXT,
+              times_set INTEGER NOT NULL DEFAULT 0,
               state TEXT NOT NULL,
               remote_id TEXT,
               remote_name TEXT,
@@ -314,6 +336,17 @@ class SqliteBackupStore implements BackupStore {
           await db.execute(
             'CREATE TABLE status (key TEXT PRIMARY KEY, value TEXT NOT NULL)',
           );
+        },
+        onUpgrade: (db, from, _) async {
+          if (from < 2) {
+            // Filled by the next scan; the cloud's dates are set after that.
+            await db.execute(
+              'ALTER TABLE media ADD COLUMN added INTEGER NOT NULL DEFAULT 0',
+            );
+            await db.execute(
+              'ALTER TABLE media ADD COLUMN times_set INTEGER NOT NULL DEFAULT 0',
+            );
+          }
         },
       ),
     );

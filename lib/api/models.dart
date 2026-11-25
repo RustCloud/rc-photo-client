@@ -21,6 +21,7 @@ class Node {
     required this.etag,
     required this.modifiedAt,
     required this.updatedAt,
+    this.bornAt,
   });
 
   factory Node.fromJson(Map<String, dynamic> j) => Node(
@@ -33,6 +34,7 @@ class Node {
     etag: j['etag'] as String?,
     modifiedAt: _date(j['modified_at']),
     updatedAt: _date(j['updated_at']),
+    bornAt: _date(j['born_at']),
   );
 
   final String id;
@@ -50,6 +52,11 @@ class Node {
   /// The mtime the client gave on upload (or the upload time).
   final DateTime? modifiedAt;
   final DateTime? updatedAt;
+
+  /// When the file was made on the device that sent it (`ctime`); the
+  /// server's creation time if it didn't say. Null from a server before
+  /// API 0.2.21, which doesn't keep it.
+  final DateTime? bornAt;
 }
 
 /// One photo or video of the gallery index (`Entry` in r-image/src/index.rs).

@@ -151,23 +151,47 @@ class RcClient {
     },
   );
 
+  /// Sets when a file was made ([born], `born_at`) and changed ([modified],
+  /// `modified_at`); seconds. A server before API 0.2.21 leaves `born_at`
+  /// and returns none.
+  Future<Node> setTimes(String id, {int? born, int? modified}) async {
+    String at(int s) => DateTime.fromMillisecondsSinceEpoch(
+      s * 1000,
+      isUtc: true,
+    ).toIso8601String();
+    return Node.fromJson(
+      await _json(
+        'PATCH',
+        '/api/v1/files/$id',
+        body: {
+          if (born != null) 'born_at': at(born),
+          if (modified != null) 'modified_at': at(modified),
+        },
+      ),
+    );
+  }
+
   /// To the trash (recoverable there).
   Future<void> deleteFile(String id) => _send('DELETE', '/api/v1/files/$id');
 
   // ── Upload ──────────────────────────────────────────────────────────
 
-  /// A whole file in one request (`POST …/upload`); [mtime] in seconds.
+  /// A whole file in one request (`POST …/upload`). [mtime]: when the file
+  /// changed, [ctime]: when it was made; seconds. A server that doesn't know
+  /// `ctime` skips it.
   Future<Node> upload(
     String folderId,
     String name,
     Uint8List bytes, {
     int? mtime,
+    int? ctime,
     bool overwrite = false,
   }) async {
     final q = Uri(
       queryParameters: {
         'name': name,
         'mtime': ?mtime?.toString(),
+        'ctime': ?ctime?.toString(),
         if (overwrite) 'overwrite': 'true',
       },
     ).query;
@@ -186,6 +210,7 @@ class RcClient {
     required String name,
     required int size,
     int? mtime,
+    int? ctime,
     bool overwrite = false,
   }) async => UploadState.fromJson(
     await _json(
@@ -197,6 +222,7 @@ class RcClient {
         // A string: the server reads it like `?mtime=` (seconds or RFC 3339)
         // and refuses a JSON number.
         'mtime': ?mtime?.toString(),
+        'ctime': ?ctime?.toString(),
         if (overwrite) 'overwrite': true,
       },
     ),

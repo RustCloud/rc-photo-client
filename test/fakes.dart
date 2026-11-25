@@ -116,8 +116,16 @@ class FakeCloud extends RcClient {
   /// is thrown instead of doing it.
   final List<ApiException> failNext = [];
 
-  /// The uploads in parts the server has: id → (folder, name, size, bytes).
-  final Map<String, (String, String, int, BytesBuilder, bool)> uploads = {};
+  /// The uploads in parts the server has: id → (folder, name, size, bytes,
+  /// overwrite, mtime, ctime).
+  final Map<String, (String, String, int, BytesBuilder, bool, int?, int?)>
+  uploads = {};
+
+  /// A server since API 0.2.21: keeps `ctime` as `born_at`.
+  bool keepsCtime = true;
+
+  /// `PATCH` of file times: (id, born, modified), seconds.
+  final List<(String, int?, int?)> timesSet = [];
   int simpleUploads = 0;
   int parts = 0;
 
@@ -129,6 +137,7 @@ class FakeCloud extends RcClient {
     int size = 0,
     String? etag,
     DateTime? modified,
+    DateTime? born,
   }) => Node(
     id: id,
     parentId: parent,
@@ -139,6 +148,7 @@ class FakeCloud extends RcClient {
     etag: etag,
     modifiedAt: modified,
     updatedAt: null,
+    bornAt: born,
   );
 
   Node add(String parent, String name, {bool dir = true, List<int>? bytes}) {
@@ -195,6 +205,7 @@ class FakeCloud extends RcClient {
     Uint8List bytes,
     bool overwrite,
     int? mtime,
+    int? ctime,
   ) {
     final there = nodes.values
         .where((n) => n.parentId == folder && n.name == name)
@@ -208,17 +219,45 @@ class FakeCloud extends RcClient {
       name,
       size: bytes.length,
       etag: sha256.convert(bytes).toString(),
-      modified: mtime == null
+      modified: _at(mtime),
+      // A file replaced keeps when it was made.
+      born: !keepsCtime
           ? null
-          : DateTime.fromMillisecondsSinceEpoch(mtime * 1000, isUtc: true),
+          : there != null
+          ? there.bornAt
+          : _at(ctime) ?? DateTime.utc(2026, 11, 25),
     );
     nodes[n.id] = n;
     content[n.id] = bytes;
     return n;
   }
 
+  static DateTime? _at(int? s) => s == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(s * 1000, isUtc: true);
+
   @override
   Future<Node> root() async => nodes['root']!;
+
+  @override
+  Future<Node> setTimes(String id, {int? born, int? modified}) async {
+    final n = nodes[id];
+    if (n == null) throw const ApiException(404, 'FILE_NOT_FOUND', '');
+    timesSet.add((id, born, modified));
+    final changed = Node(
+      id: n.id,
+      parentId: n.parentId,
+      name: n.name,
+      isDir: n.isDir,
+      size: n.size,
+      mimeType: n.mimeType,
+      etag: n.etag,
+      modifiedAt: _at(modified) ?? n.modifiedAt,
+      updatedAt: n.updatedAt,
+      bornAt: keepsCtime ? _at(born) ?? n.bornAt : null,
+    );
+    return nodes[id] = changed;
+  }
 
   @override
   Future<List<Node>> children(String folderId) async {
@@ -341,12 +380,13 @@ class FakeCloud extends RcClient {
     String name,
     Uint8List bytes, {
     int? mtime,
+    int? ctime,
     bool overwrite = false,
   }) async {
     _sending();
     _needFolder(folderId);
     simpleUploads++;
-    return _store(folderId, name, bytes, overwrite, mtime);
+    return _store(folderId, name, bytes, overwrite, mtime, ctime);
   }
 
   @override
@@ -355,6 +395,7 @@ class FakeCloud extends RcClient {
     required String name,
     required int size,
     int? mtime,
+    int? ctime,
     bool overwrite = false,
   }) async {
     _sending();
@@ -364,7 +405,15 @@ class FakeCloud extends RcClient {
       throw const ApiException(409, 'NAME_TAKEN', '');
     }
     final id = 'u${_next++}';
-    uploads[id] = (folderId, name, size, BytesBuilder(), overwrite);
+    uploads[id] = (
+      folderId,
+      name,
+      size,
+      BytesBuilder(),
+      overwrite,
+      mtime,
+      ctime,
+    );
     return UploadState(id: id, size: size, received: 0);
   }
 
@@ -400,7 +449,7 @@ class FakeCloud extends RcClient {
       uploads.remove(id);
       throw const ApiException(400, 'CHECKSUM_MISMATCH', '');
     }
-    final n = _store(u.$1, u.$2, bytes, u.$5, null);
+    final n = _store(u.$1, u.$2, bytes, u.$5, u.$6, u.$7);
     uploads.remove(id);
     return n;
   }
@@ -452,6 +501,7 @@ class FakeMedia implements PhoneMedia {
     int size = 1000,
     String mime = 'image/jpeg',
     int taken = 1700000000000,
+    int added = 0,
     List<int>? bytes,
   }) {
     final data = Uint8List.fromList(
@@ -463,6 +513,7 @@ class FakeMedia implements PhoneMedia {
       name: name,
       size: data.length,
       modified: 1700000000,
+      added: added,
       taken: taken,
       mime: mime,
       uri: 'content://media/$id',
