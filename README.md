@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" width="128" height="128" alt=""></p>
+
 # RustCloud Photos
 
 Приложение для телефонов: галерея и резервная копия фото поверх [RustCloud](https://github.com/RustCloud/server)
@@ -25,6 +27,9 @@ sh ci.sh test    # без APK
 ```sh
 sh tools/buildserver-ci.sh
 ```
+
+Иконка приложения — [assets/logo.svg](assets/logo.svg). После её правки PNG для Android делаются
+заново: `sh tools/icons.sh` (нужен `rsvg-convert` из librsvg).
 
 ## Выпуск
 

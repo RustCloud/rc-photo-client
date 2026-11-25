@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Behind the logo in the adaptive launcher icon: a warm light tone of its oranges. -->
+    <color name="ic_launcher_background">#FFF3E6</color>
+</resources>
