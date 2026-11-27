@@ -193,6 +193,37 @@ void main() {
     expect(auth.starting, isFalse);
   });
 
+  test('a token the client could not give at start keeps the login', () async {
+    final store = MemorySessionStore();
+    await store.writeLogin(AccountLogin(server.uri, 'alice'));
+    final native = FakeBridge(phoneAccounts: ['alice']); // answers "failed"
+    final auth = AuthController(native: native, store: store);
+    var loggedOut = false;
+    auth.onLoggedOut.add(() async => loggedOut = true);
+    await auth.start();
+    await pumpEventQueue();
+    expect(native.tokenCalls, greaterThan(0));
+    expect(auth.session, isNotNull);
+    expect(store.login, isA<AccountLogin>());
+    expect(loggedOut, isFalse);
+  });
+
+  test('the account removed from the phone ends the login', () async {
+    final store = MemorySessionStore();
+    await store.writeLogin(AccountLogin(server.uri, 'alice'));
+    final auth = AuthController(
+      native: FakeBridge(token: const AccountToken(error: 'login')),
+      store: store,
+    );
+    var loggedOut = false;
+    auth.onLoggedOut.add(() async => loggedOut = true);
+    await auth.start();
+    await pumpEventQueue();
+    expect(auth.session, isNull);
+    expect(store.login, isNull);
+    expect(loggedOut, isTrue);
+  });
+
   test('browser login without tokens is not restored', () async {
     final store = MemorySessionStore();
     await store.writeLogin(BrowserLogin(server.uri));

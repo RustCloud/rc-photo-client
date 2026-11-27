@@ -122,10 +122,10 @@ class AuthController extends ChangeNotifier {
         _session = Session(client: s.client, login: s.login, user: user);
         notifyListeners();
       }
-    } on SessionEndedException {
-      await _ended();
     } catch (_) {
-      // Offline: keep the session, try on the next request.
+      // Offline, or the token source can't give a token now: keep the
+      // session, try on the next request. A login that is really over is
+      // ended by its source (onEnded).
     }
   }
 

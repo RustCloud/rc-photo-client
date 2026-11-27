@@ -18,8 +18,9 @@ class AccountTokenSource implements TokenSource {
   DateTime? _expiresAt;
   Future<String>? _asking;
 
-  /// Called when the account is gone or logged out and the user didn't log
-  /// in again in the client.
+  /// Called when the account is gone from the phone (the user logged out in
+  /// the client or removed it in Settings). Only then the app forgets its
+  /// login and backup.
   void Function()? onEnded;
 
   static const _margin = Duration(seconds: 30);
@@ -52,10 +53,26 @@ class AccountTokenSource implements TokenSource {
       _expiresAt = r.expiresAt ?? _clock().add(const Duration(minutes: 10));
       return t;
     }
+    final why = 'account: ${r.error} ${r.message ?? ''}'.trim();
     if (r.error == 'network') throw NetworkException(r.message ?? 'network');
-    onEnded?.call();
-    throw SessionEndedException(
-      'account: ${r.error} ${r.message ?? ''}'.trim(),
-    );
+    // Android often can't start the client when it was killed (OEM limits on
+    // waking other apps), its screen may be closed, or it may want the user:
+    // none of that ends the login. Only an account that is gone does.
+    if (!await _accountThere()) {
+      onEnded?.call();
+      throw SessionEndedException(why);
+    }
+    // The client wants its user: this request fails, the login stays, and
+    // the next one with a screen shows the client's.
+    if (r.error == 'login') throw SessionEndedException(why);
+    throw NetworkException(why);
+  }
+
+  Future<bool> _accountThere() async {
+    try {
+      return (await _native.accounts()).contains(account);
+    } on Object {
+      return true; // can't tell: keep it
+    }
   }
 }
